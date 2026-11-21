@@ -1,0 +1,2238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>__PAGE_TITLE__</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --panel: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --ai: #7c3aed;
+      --hl-normal-bg: #fef9c3;
+      --hl-normal-bd: #eab308;
+      --hl-normal-fg: #854d0e;
+      --hl-warn-bg: #ffedd5;
+      --hl-warn-bd: #f97316;
+      --hl-warn-fg: #9a3412;
+      --hl-error-bg: #fee2e2;
+      --hl-error-bd: #ef4444;
+      --hl-error-fg: #991b1b;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      --font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: var(--font-sans); background: var(--bg); color: var(--text); }
+
+    /* ── Header (88px = 48px + 40px) ── */
+    .header-wrap {
+      position: relative; z-index: 50; background: var(--panel);
+      border-bottom: 1px solid var(--border); box-shadow: 0 1px 4px rgba(15, 23, 42, .05);
+    }
+    .topbar {
+      height: 48px; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .top-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; min-width: 0; }
+    .brand-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .brand-badge {
+      font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px;
+      background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; white-space: nowrap;
+    }
+    .tools-right { display: flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0; }
+    .search-box {
+      width: 185px; height: 29px; padding: 0 10px; border-radius: 8px;
+      border: 1px solid #cbd5e1; font-size: 12px; outline: none; background: #f8fafc;
+    }
+    .search-box:focus { border-color: var(--accent); background: #fff; }
+    .btn {
+      height: 29px; padding: 0 10px; border-radius: 8px; border: 1px solid #cbd5e1;
+      background: #fff; color: #334155; font-size: 12px; cursor: pointer; font-weight: 500;
+      display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+    }
+    .btn:hover { background: #f1f5f9; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-ai { background: var(--ai); border-color: var(--ai); color: #fff; }
+    .btn-ai:hover { background: #6d28d9; }
+    .btn-sm { height: 24px; padding: 0 8px; font-size: 11px; border-radius: 6px; }
+    .btn-danger { background: #dc2626; border-color: #dc2626; color: #fff; }
+    .btn-danger:hover { background: #b91c1c; }
+    .zoom-readout { font-size: 12px; color: var(--muted); min-width: 42px; text-align: center; font-variant-numeric: tabular-nums; }
+
+    /* Row 2: Chain & Scenario Bar */
+    .subbar {
+      height: 40px; padding: 0 14px; display: flex; align-items: center; gap: 10px;
+      overflow-x: auto; background: #fafcff;
+    }
+    .subbar::-webkit-scrollbar { display: none; }
+    .bar-group { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .bar-label { font-size: 11px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+    .v-div { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; margin: 0 2px; }
+
+    .pill {
+      border: 1px solid var(--border); background: #fff; color: #334155;
+      border-radius: 99px; padding: 3px 10px; font-size: 12px; cursor: pointer;
+      white-space: nowrap; transition: .15s; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;
+    }
+    .pill:hover { border-color: var(--accent); color: var(--accent); background: #eff6ff; }
+    .pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .pill.scenario-active-normal { background: #2563eb; border-color: #2563eb; color: #fff; }
+    .pill.scenario-active-warn { background: #d97706; border-color: #d97706; color: #fff; }
+    .pill.scenario-active-error { background: #dc2626; border-color: #dc2626; color: #fff; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .pill[class*="scenario-active-"] .dot { background: #fff !important; }
+    .other-toggle {
+      font-size: 11px; padding: 2px 8px; border-radius: 6px; border: 1px dashed #94a3b8;
+      background: #f8fafc; color: #475569; cursor: pointer; display: none; white-space: nowrap;
+    }
+    .other-toggle.show { display: inline-flex; align-items: center; }
+
+    /* ── Center SVG Infinite Whiteboard ── */
+    .stage {
+      position: relative; width: 100%; height: calc(100vh - 88px); overflow: hidden;
+      background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+      background-size: 24px 24px; cursor: grab;
+    }
+    .stage.dragging { cursor: grabbing; }
+    svg#board { width: 100%; height: 100%; display: block; user-select: none; }
+
+    .hint-toast {
+      position: absolute; left: 14px; bottom: 14px; z-index: 15;
+      background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(6px);
+      border: 1px solid var(--border); border-radius: 9px; padding: 6px 11px;
+      font-size: 11.5px; color: #475569; box-shadow: 0 3px 10px rgba(15, 23, 42, .06);
+      pointer-events: none; transition: left .22s cubic-bezier(.22,1,.36,1), opacity .15s;
+    }
+    .hint-toast.hidden { opacity: 0; }
+
+    /* SVG Nodes & Edges */
+    .node-group { cursor: pointer; transition: opacity .15s; }
+    .node-group .card-rect { transition: filter .15s, stroke-width .15s; }
+    .node-group:hover .card-rect { filter: drop-shadow(0 6px 14px rgba(15, 23, 42, .12)); stroke-width: 2.2; }
+    .node-group.selected .card-rect {
+      stroke-width: 3 !important;
+      filter: drop-shadow(0 0 0 4px rgba(37, 99, 235, 0.24)) drop-shadow(0 8px 18px rgba(37, 99, 235, .18));
+    }
+    .node-group.armed { cursor: grab; }
+    .node-group.armed .card-rect {
+      stroke: var(--ai) !important; stroke-width: 3 !important; stroke-dasharray: 6 3 !important;
+      filter: drop-shadow(0 0 10px rgba(124, 58, 237, 0.45));
+    }
+    .node-group.dimmed { opacity: 0.2; }
+    .card-ask-btn {
+      float: right; margin-left: 4px; font-size: 10px; font-weight: 700;
+      padding: 1px 6px; border-radius: 99px; border: 1px solid #ddd6fe;
+      background: #f5f3ff; color: #6d28d9; cursor: pointer; opacity: 0.18; transition: opacity .15s, background .15s;
+    }
+    .node-group:hover .card-ask-btn,
+    .node-group.selected .card-ask-btn,
+    .node-group.armed .card-ask-btn { opacity: 1; }
+    .card-ask-btn:hover { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+
+    .edge-path { fill: none; transition: opacity .15s, stroke-width .15s; }
+    .edge-path.active { stroke-width: 2.8 !important; opacity: 1 !important; }
+    .edge-path.dimmed { opacity: 0.12; }
+    .edge-label-g { transition: opacity .15s; }
+    .edge-label-g.dimmed { opacity: 0.15; }
+    .group-wrap { transition: opacity .15s; }
+    .group-wrap.dimmed { opacity: 0.15; }
+
+    /* Pointer Ghost when dragging armed SVG card to AI */
+    .drag-ghost {
+      position: fixed; z-index: 999; pointer-events: none; display: none;
+      padding: 6px 12px; border-radius: 10px; background: #5b21b6; color: #fff;
+      font-size: 12px; font-weight: 600; box-shadow: 0 10px 24px rgba(91, 33, 182, 0.35);
+      border: 1px solid #a78bfa; white-space: nowrap;
+    }
+
+    /* ── Floating Bottom Tour / Scenario Bar ── */
+    .float-bar-host {
+      position: fixed; bottom: 16px; left: 16px; right: 16px; z-index: 35;
+      display: flex; justify-content: center; pointer-events: none;
+      transition: left .22s cubic-bezier(.22,1,.36,1), right .22s cubic-bezier(.22,1,.36,1);
+    }
+    .float-bar {
+      pointer-events: auto; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(10px);
+      border: 1px solid #cbd5e1; border-radius: 14px;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+      max-width: 760px; width: auto; min-width: 360px; display: none;
+    }
+    .float-bar.open { display: block; }
+    .tour-compact { padding: 8px 14px; display: flex; align-items: center; gap: 12px; font-size: 12.5px; }
+    .tour-step-text { font-weight: 600; color: #0f172a; }
+    .scenario-card { padding: 11px 15px; width: min(740px, 90vw); }
+    .sc-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      margin-bottom: 8px; padding-bottom: 7px; border-bottom: 1px solid #f1f5f9;
+    }
+    .sc-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; min-width: 0; }
+    .sc-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+    .sc-badge.normal { background: #dbeafe; color: #1d4ed8; }
+    .sc-badge.warn { background: #ffedd5; color: #c2410c; }
+    .sc-badge.error { background: #fee2e2; color: #b91c1c; }
+    .sc-nav { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .sc-grid { display: grid; gap: 5px; font-size: 12.5px; line-height: 1.5; }
+    .sc-row { display: flex; gap: 8px; align-items: baseline; }
+    .sc-k { font-weight: 700; color: #475569; white-space: nowrap; font-size: 11.5px; min-width: 58px; }
+    .sc-v { color: #0f172a; word-break: break-word; }
+    .sc-flow {
+      font-family: var(--font-mono); font-size: 11.5px; background: #f8fafc;
+      border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 8px; color: #0369a1;
+    }
+
+    /* ── Left Slide-Over Source Drawer ── */
+    .drawer {
+      position: fixed; top: 88px; left: 0; bottom: 0; width: 560px; max-width: 92vw;
+      background: var(--panel); border-right: 1px solid var(--border);
+      box-shadow: 8px 0 30px rgba(15, 23, 42, 0.12);
+      z-index: 40; display: flex; flex-direction: column;
+      transform: translateX(-100%); transition: transform .22s cubic-bezier(.22,1,.36,1), width .18s ease;
+    }
+    .drawer.open { transform: translateX(0); }
+    .drawer.wide { width: 760px; }
+
+    .drawer-head {
+      padding: 10px 14px; border-bottom: 1px solid var(--border); background: #f8fafc;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .drawer-title-wrap { min-width: 0; cursor: grab; }
+    .drawer-badges { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
+    .badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; border: 1px solid transparent; }
+    .drawer-title { font-size: 14.5px; font-weight: 700; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .drawer-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+
+    .drawer-tabs {
+      display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-bottom: 1px solid var(--border);
+      background: #ffffff; overflow-x: auto; flex-shrink: 0;
+    }
+    .drawer-tabs::-webkit-scrollbar { height: 4px; }
+    .file-tab {
+      border: 1px solid transparent; background: transparent; color: #64748b;
+      font-size: 12px; font-family: var(--font-mono); padding: 4px 8px; border-radius: 6px;
+      cursor: pointer; white-space: nowrap;
+    }
+    .file-tab:hover { background: #f1f5f9; color: #0f172a; }
+    .file-tab.active { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; font-weight: 600; }
+
+    .note-box {
+      padding: 11px 14px; background: #fafcff; border-bottom: 1px solid var(--border);
+      font-size: 13px; line-height: 1.65; color: #1e293b; flex-shrink: 0;
+      max-height: 225px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
+    }
+    .inline-code {
+      font-family: var(--font-mono); font-size: 12px; background: #f1f5f9; color: #0f172a;
+      padding: 1px 5px; border-radius: 4px; border: 1px solid #e2e8f0;
+    }
+    .sc-ctx { padding: 8px 10px; border-radius: 8px; font-size: 12.5px; line-height: 1.55; border-left: 3px solid; }
+    .sc-ctx.normal { background: #eff6ff; border-color: #2563eb; color: #1e3a8a; }
+    .sc-ctx.warn { background: #fff7ed; border-color: #d97706; color: #7c2d12; }
+    .sc-ctx.error { background: #fef2f2; border-color: #dc2626; color: #7f1d1d; }
+    .interview-box {
+      background: #fffbeb; border: 1px solid #fde68a; border-left: 3px solid #f59e0b;
+      border-radius: 8px; padding: 8px 10px; font-size: 12.5px; color: #78350f;
+    }
+    .extra-tag {
+      align-self: flex-start; font-size: 11px; color: #0369a1; background: #ecfeff;
+      border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 6px;
+    }
+
+    .code-wrap {
+      flex: 1; overflow: auto; background: #ffffff; position: relative;
+      font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6;
+    }
+    .code-table { width: 100%; border-collapse: collapse; }
+    .code-row { transition: background .12s; }
+    .code-row.mapped { cursor: pointer; }
+    .code-row.mapped:hover td { background: #f8fafc; }
+    .code-row.hl-normal td { background: var(--hl-normal-bg) !important; }
+    .code-row.hl-normal td.ln { border-left: 3px solid var(--hl-normal-bd); color: var(--hl-normal-fg); font-weight: 700; }
+    .code-row.hl-warn td { background: var(--hl-warn-bg) !important; }
+    .code-row.hl-warn td.ln { border-left: 3px solid var(--hl-warn-bd); color: var(--hl-warn-fg); font-weight: 700; }
+    .code-row.hl-error td { background: var(--hl-error-bg) !important; }
+    .code-row.hl-error td.ln { border-left: 3px solid var(--hl-error-bd); color: var(--hl-error-fg); font-weight: 700; }
+
+    td.ln {
+      width: 50px; padding: 1px 10px 1px 8px; text-align: right; color: #94a3b8;
+      user-select: none; border-right: 1px solid #f1f5f9; vertical-align: top;
+      font-variant-numeric: tabular-nums; border-left: 3px solid transparent;
+    }
+    td.src { padding: 1px 14px 1px 12px; white-space: pre; color: #0f172a; }
+
+    .summary-panel { padding: 18px; font-family: var(--font-sans); font-size: 13.5px; line-height: 1.7; color: #334155; }
+    .summary-card-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+    .neighbor-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .neighbor-btn {
+      border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8;
+      border-radius: 8px; padding: 5px 10px; font-size: 12px; cursor: pointer; font-weight: 600;
+    }
+    .neighbor-btn:hover { background: #dbeafe; }
+
+    .tok-kw { color: #7c3aed; font-weight: 600; }
+    .tok-str { color: #047857; }
+    .tok-com { color: #64748b; font-style: italic; }
+    .tok-num { color: #b45309; }
+    .tok-ann { color: #0284c7; }
+
+    /* ── Right Slide-Over AI Tutor Panel ── */
+    .ai-panel {
+      position: fixed; top: 88px; right: 0; bottom: 0; width: 430px; max-width: 94vw;
+      background: var(--panel); border-left: 1px solid var(--border);
+      box-shadow: -8px 0 30px rgba(15, 23, 42, 0.12);
+      z-index: 42; display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform .22s cubic-bezier(.22,1,.36,1), width .18s ease;
+    }
+    .ai-panel.open { transform: translateX(0); }
+    .ai-panel.wide { width: 600px; }
+
+    .ai-head {
+      padding: 10px 14px; border-bottom: 1px solid var(--border); background: #faf5ff;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+    }
+    .ai-head-title { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #4c1d95; flex-wrap: wrap; }
+    .ai-head-actions { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+    .proxy-pill {
+      font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 99px;
+      border: 1px solid transparent; line-height: 1.3;
+    }
+    .proxy-pill.ok { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+    .proxy-pill.direct { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+
+    .study-meter {
+      padding: 6px 14px; background: #f8fafc; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      font-size: 11.5px; color: #475569;
+    }
+    .ai-config {
+      display: none; padding: 10px 14px; background: #f5f3ff; border-bottom: 1px solid #ddd6fe;
+      flex-direction: column; gap: 7px; font-size: 12px;
+    }
+    .ai-config.open { display: flex; }
+    .proxy-banner {
+      padding: 7px 9px; border-radius: 7px; font-size: 11px; line-height: 1.45; border: 1px solid transparent;
+    }
+    .proxy-banner.ok { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+    .proxy-banner.direct { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .cfg-row { display: flex; align-items: center; gap: 8px; }
+    .cfg-row label { width: 62px; font-weight: 600; color: #5b21b6; flex-shrink: 0; font-size: 11.5px; }
+    .cfg-row input {
+      flex: 1; height: 28px; padding: 0 8px; border-radius: 6px; border: 1px solid #c4b5fd;
+      background: #fff; font-size: 12px; font-family: var(--font-mono); outline: none;
+    }
+    .cfg-actions { display: flex; align-items: center; gap: 6px; }
+    .cfg-status { font-size: 11px; line-height: 1.45; min-height: 16px; word-break: break-word; }
+    .cfg-status:empty { display: none; }
+    .cfg-status.ok { color: #047857; font-weight: 600; }
+    .cfg-status.err { color: #b91c1c; font-weight: 600; }
+    .cfg-status.pending { color: #5b21b6; }
+
+    .ai-body-wrap { position: relative; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .ai-drop-overlay {
+      position: absolute; inset: 8px; z-index: 10; border-radius: 12px;
+      border: 2px dashed #7c3aed; background: rgba(245, 243, 255, 0.92);
+      display: none; align-items: center; justify-content: center; text-align: center;
+      color: #5b21b6; font-weight: 700; font-size: 14px; padding: 20px; pointer-events: none;
+    }
+    .ai-drop-overlay.active { display: flex; }
+
+    .ai-messages {
+      flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px;
+      background: #ffffff;
+    }
+    .ai-welcome {
+      background: #f8fafc; border: 1px solid var(--border); border-radius: 12px;
+      padding: 12px 14px; font-size: 12.5px; line-height: 1.7; color: #334155;
+    }
+    .ai-msg { display: flex; flex-direction: column; gap: 4px; max-width: 100%; }
+    .ai-msg.user { align-items: flex-end; }
+    .ai-msg.assistant { align-items: flex-start; }
+    .ai-msg-quotes { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; max-width: 95%; }
+    .q-badge-mini {
+      font-size: 11px; padding: 2px 7px; border-radius: 99px; background: #ede9fe;
+      color: #5b21b6; border: 1px solid #ddd6fe; cursor: pointer;
+    }
+    .ai-bubble {
+      padding: 9px 12px; border-radius: 12px; font-size: 13px; line-height: 1.65;
+      word-break: break-word; max-width: 96%;
+    }
+    .ai-msg.user .ai-bubble { background: #2563eb; color: #fff; border-bottom-right-radius: 3px; white-space: pre-wrap; }
+    .ai-msg.assistant .ai-bubble {
+      background: #f8fafc; border: 1px solid #e2e8f0; color: #0f172a; border-bottom-left-radius: 3px; width: 100%;
+    }
+    .ai-msg.error .ai-bubble {
+      background: #fef2f2; border-color: #fecaca; color: #7f1d1d;
+    }
+    .ai-bubble pre {
+      background: #0f172a; color: #e2e8f0; padding: 9px 11px; border-radius: 8px;
+      overflow-x: auto; font-family: var(--font-mono); font-size: 11.5px; margin: 6px 0;
+    }
+    .ai-bubble h3, .ai-bubble h4 { font-size: 13.5px; margin: 8px 0 4px; color: #1e293b; }
+    .ai-bubble ul { padding-left: 18px; margin: 4px 0; }
+    .ai-bubble li { margin: 2px 0; }
+    .report-actions { margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; }
+    .msg-actions { margin-top: 8px; display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+
+    .ai-footer {
+      border-top: 1px solid var(--border); background: #fafcff; padding: 10px 12px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .quote-tray { display: none; flex-wrap: wrap; gap: 5px; align-items: center; }
+    .quote-tray.show { display: flex; }
+    .quote-chip {
+      display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600;
+      padding: 3px 8px; border-radius: 99px; background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe;
+    }
+    .quote-chip button {
+      border: none; background: transparent; color: #7e22ce; cursor: pointer; font-weight: 700; font-size: 12px;
+    }
+    .ctx-meter { margin-left: auto; font-size: 11px; color: #64748b; }
+    .input-row { display: flex; gap: 8px; align-items: flex-end; }
+    .ai-input {
+      flex: 1; resize: none; min-height: 38px; max-height: 110px; padding: 8px 10px;
+      border: 1px solid #cbd5e1; border-radius: 9px; font-family: inherit; font-size: 13px; outline: none;
+    }
+    .ai-input:focus { border-color: var(--ai); }
+  </style>
+</head>
+<body>
+  <div class="header-wrap">
+    <header class="topbar">
+      <div class="top-left">
+        <button class="btn" id="toggleDrawerBtn" title="打开/收起左侧源码抽屉">📄 看源码</button>
+        <div class="brand">
+          <span class="brand-title" id="projectTitle">源码导图</span>
+          <span class="brand-badge" id="projectSubtitle"></span>
+        </div>
+      </div>
+      <div class="tools-right">
+        <input class="search-box" id="searchInput" type="search" placeholder="搜索类/方法/参数/追问..." />
+        <button class="btn" id="zoomOutBtn" title="缩小">-</button>
+        <span class="zoom-readout" id="zoomReadout">100%</span>
+        <button class="btn" id="zoomInBtn" title="放大">+</button>
+        <button class="btn" id="fitBtn" title="居中显示当前视角">适应全图</button>
+        <button class="btn btn-ai" id="toggleAiBtn" title="打开/收起右侧 AI 源码导师">🤖 AI 导师</button>
+      </div>
+    </header>
+
+    <nav class="subbar">
+      <div class="bar-group" id="chainBar">
+        <span class="bar-label">链路视角</span>
+      </div>
+      <button class="other-toggle" id="otherModeBtn" title="切换其余链路的显示方式">隐藏其他链路</button>
+      <div class="v-div" id="scenarioDivider"></div>
+      <div class="bar-group" id="scenarioBar">
+        <span class="bar-label">🎬 场景演练</span>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Left Source Drawer -->
+  <aside class="drawer" id="sourceDrawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div class="drawer-title-wrap" id="drawerDragHeader" draggable="true" title="可直接拖进右侧 AI 对话框引用当前卡片或文件">
+        <div class="drawer-badges">
+          <span class="badge" id="drawerFileBadge">Source</span>
+          <span class="badge" id="drawerLineBadge" style="background:#fef9c3;color:#854d0e;border-color:#fde047;">L1</span>
+        </div>
+        <div class="drawer-title" id="drawerTitle">请选择卡片查看对应源码</div>
+      </div>
+      <div class="drawer-actions">
+        <button class="btn btn-ai btn-sm" id="quoteCardBtn" title="将当前卡片或类引用给 AI">+ 问AI</button>
+        <button class="btn btn-sm" id="prevCardBtn" title="同类/同链上一张卡">↑</button>
+        <button class="btn btn-sm" id="nextCardBtn" title="同类/同链下一张卡">↓</button>
+        <button class="btn btn-sm" id="wideLeftBtn">加宽</button>
+        <button class="btn btn-sm" id="closeDrawerBtn" title="关闭 (Esc)">✕</button>
+      </div>
+    </div>
+
+    <div class="drawer-tabs" id="drawerTabs"></div>
+    <div class="note-box" id="noteBox"></div>
+    <div class="code-wrap" id="codeWrap"></div>
+  </aside>
+
+  <!-- Center Infinite SVG Whiteboard -->
+  <main class="stage" id="stage">
+    <svg id="board" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow-default" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8.5 5 L 0 8.5 z" fill="#64748b" />
+        </marker>
+        <marker id="arrow-active" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8.5 5 L 0 8.5 z" fill="#2563eb" />
+        </marker>
+        <marker id="arrow-normal" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8.5 5 L 0 8.5 z" fill="#2563eb" />
+        </marker>
+        <marker id="arrow-warn" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8.5 5 L 0 8.5 z" fill="#d97706" />
+        </marker>
+        <marker id="arrow-error" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8.5 5 L 0 8.5 z" fill="#dc2626" />
+        </marker>
+      </defs>
+      <g id="viewport"></g>
+    </svg>
+    <div class="hint-toast" id="hintToast">
+      滚轮缩放 · 拖拽平移 · <b>单击卡片</b>看左栏源码 · <b>双击卡片</b>拖给右侧 AI（或点 <code>+AI</code>）
+    </div>
+  </main>
+
+  <div class="drag-ghost" id="dragGhost">📎 松手引用到 AI 对话</div>
+
+  <div class="float-bar-host" id="floatBarHost">
+    <div class="float-bar" id="floatBar"></div>
+  </div>
+
+  <!-- Right AI Tutor Panel -->
+  <aside class="ai-panel" id="aiPanel" aria-hidden="true">
+    <div class="ai-head">
+      <div class="ai-head-title">🤖 AI 源码导师 <span class="proxy-pill direct" id="proxyPill" title="正在检测本机同源代理">检测中...</span></div>
+      <div class="ai-head-actions">
+        <button class="btn btn-sm" id="aiConfigBtn" title="设置 OpenAI 兼容模型地址与密钥">⚙️ 配置</button>
+        <button class="btn btn-primary btn-sm" id="diagReportBtn" title="结合学习记录生成薄弱点诊断报告">📊 诊断报告</button>
+        <button class="btn btn-sm" id="exportStudyBtn" title="导出对话与学习轨迹 JSON 备份">💾 导出</button>
+        <button class="btn btn-sm" id="importStudyBtn" title="从 JSON 备份恢复对话与学习轨迹">📂 导入</button>
+        <input type="file" id="importFileInput" accept=".json" hidden />
+        <button class="btn btn-sm" id="clearAiBtn" title="清空当前对话记录（保留探索统计）">🗑️</button>
+        <button class="btn btn-sm" id="wideRightBtn">加宽</button>
+        <button class="btn btn-sm" id="closeAiBtn">✕</button>
+      </div>
+    </div>
+
+    <div class="ai-config" id="aiConfigBox">
+      <div class="proxy-banner direct" id="proxyBanner">正在检测本地同源代理...</div>
+      <div class="cfg-row">
+        <label for="cfgBaseUrl">Base URL</label>
+        <input id="cfgBaseUrl" type="text" placeholder="https://api.deepseek.com/v1" />
+      </div>
+      <div class="cfg-row">
+        <label for="cfgApiKey">API Key</label>
+        <input id="cfgApiKey" type="password" placeholder="仅存本机浏览器（本机网关 127.0.0.1 可留空）" />
+      </div>
+      <div class="cfg-row">
+        <label for="cfgModel">Model</label>
+        <input id="cfgModel" type="text" placeholder="deepseek-chat" />
+      </div>
+      <div class="cfg-row" style="justify-content:space-between;margin-top:2px;">
+        <span style="font-size:11px;color:#6d28d9;">配置跨导图共用，保存在本地浏览器</span>
+        <div class="cfg-actions">
+          <button class="btn btn-sm" id="testCfgBtn" type="button">🔌 测试连接</button>
+          <button class="btn btn-ai btn-sm" id="saveCfgBtn" type="button">保存配置</button>
+        </div>
+      </div>
+      <div class="cfg-status" id="cfgTestStatus"></div>
+    </div>
+
+    <div class="study-meter" id="studyMeter">
+      <span id="studyStatsText">已探索 0/0 张卡 · 已提问 0 次</span>
+      <span style="color:#6d28d9;cursor:pointer;font-weight:600;" id="meterDiagLink">分析薄弱点 →</span>
+    </div>
+
+    <div class="ai-body-wrap">
+      <div class="ai-drop-overlay" id="aiDropOverlay">📎 松手即可把卡片或类引用到 AI 上下文</div>
+      <div class="ai-messages" id="aiMessages"></div>
+    </div>
+
+    <div class="ai-footer">
+      <div class="quote-tray" id="quoteTray"></div>
+      <div class="input-row">
+        <textarea class="ai-input" id="aiInput" rows="2" placeholder="输入问题（可先从画布双击拖卡片，或从左栏拖文件tab进来）..."></textarea>
+        <button class="btn btn-ai" id="aiSendBtn">发送</button>
+        <button class="btn btn-danger" id="aiStopBtn" style="display:none;">停止</button>
+      </div>
+    </div>
+  </aside>
+
+  <script id="app-data" type="application/json">__MAP_DATA__</script>
+  <script>
+    const DATA = JSON.parse(document.getElementById('app-data').textContent);
+    const cardMap = new Map(DATA.cards.map(c => [c.id, c]));
+    const chainMap = new Map(DATA.chains.map(c => [c.id, c]));
+    const scenarioMap = new Map((DATA.scenarios || []).map(s => [s.id, s]));
+    const fileMetaMap = new Map(DATA.files.map(f => [f.key || f, f]));
+    const themes = DATA.themes;
+
+    const STAGE_COLORS = {
+      normal: { stroke: '#2563eb', badgeBg: '#2563eb', label: '正常流转' },
+      warn:   { stroke: '#d97706', badgeBg: '#d97706', label: '降级/兜底' },
+      error:  { stroke: '#dc2626', badgeBg: '#dc2626', label: '异常/拦截' }
+    };
+
+    const stageEl = document.getElementById('stage');
+    const vpEl = document.getElementById('viewport');
+    const zoomReadout = document.getElementById('zoomReadout');
+    const drawerEl = document.getElementById('sourceDrawer');
+    const aiPanelEl = document.getElementById('aiPanel');
+    const aiDropOverlay = document.getElementById('aiDropOverlay');
+    const dragGhostEl = document.getElementById('dragGhost');
+    const codeWrap = document.getElementById('codeWrap');
+    const noteBox = document.getElementById('noteBox');
+    const drawerTabs = document.getElementById('drawerTabs');
+    const floatBarHost = document.getElementById('floatBarHost');
+    const floatBar = document.getElementById('floatBar');
+    const hintToast = document.getElementById('hintToast');
+    const searchInput = document.getElementById('searchInput');
+    const otherModeBtn = document.getElementById('otherModeBtn');
+    const aiMessagesEl = document.getElementById('aiMessages');
+    const quoteTrayEl = document.getElementById('quoteTray');
+    const aiInputEl = document.getElementById('aiInput');
+    const aiSendBtn = document.getElementById('aiSendBtn');
+    const aiStopBtn = document.getElementById('aiStopBtn');
+
+    document.getElementById('projectTitle').textContent = DATA.projectTitle || '交互式矢量源码导图';
+    document.getElementById('projectSubtitle').textContent = DATA.projectSubtitle || `${DATA.chains.length} 条链路 · ${DATA.cards.length} 节点`;
+
+    const state = {
+      tx: 0, ty: 0, scale: 0.75,
+      activeChainId: 'ALL',
+      hideOtherChains: true,
+      activeScenarioId: null,
+      scenarioStepIdx: 0,
+      tourStepIdx: 0,
+      selectedCardId: null,
+      armedCardId: null,
+      currentFile: (DATA.files[0] && (DATA.files[0].key || DATA.files[0])) || '',
+      showAllFilesInDrawer: false,
+      dragging: false,
+      cardDraggingId: null,
+      dragStartX: 0, dragStartY: 0,
+      dragMoved: false,
+      quotes: [],
+      abortCtrl: null,
+      proxyReady: false
+    };
+
+    const NS = 'http://www.w3.org/2000/svg';
+    function svgNode(tag, attrs = {}) {
+      const el = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+      return el;
+    }
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+
+    function renderInlineText(raw) {
+      return escapeHtml(raw || '')
+        .replace(/`([^`\n]+)`/g, '<code class="inline-code">$1</code>')
+        .replace(/\n/g, '<br>');
+    }
+
+    function formatRanges(ranges) {
+      if (!ranges || !ranges.length) return '概括';
+      return ranges.map(([s, e]) => s === e ? `L${s}` : `L${s}-${e}`).join(', ');
+    }
+
+    function estimateLabelWidth(text) {
+      let w = 0;
+      for (const ch of String(text || '')) w += ch.codePointAt(0) > 0x2e7f ? 11 : 6.2;
+      return Math.max(30, Math.ceil(w + 18));
+    }
+
+    function hashString(str) {
+      let h = 2166136261;
+      for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return (h >>> 0).toString(36);
+    }
+
+    // ── 0. Persistent Storage (LLM Config + Study Telemetry + Chat History) ──
+    const CFG_KEY = 'codemap_llm_cfg_v1';
+    const STUDY_KEY = 'codemap_study_v3_' + hashString((DATA.projectTitle || 'default') + ':' + DATA.cards.length);
+
+    function loadConfig() {
+      try { return JSON.parse(localStorage.getItem(CFG_KEY) || '{}'); } catch { return {}; }
+    }
+    function saveConfig(cfg) {
+      try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch {}
+    }
+
+    const proxyPillEl = document.getElementById('proxyPill');
+    const proxyBannerEl = document.getElementById('proxyBanner');
+
+    function updateProxyIndicators() {
+      if (state.proxyReady) {
+        proxyPillEl.className = 'proxy-pill ok';
+        proxyPillEl.textContent = '🟢 代理就绪';
+        proxyPillEl.title = '已连接本机同源流式代理，所有大模型接口均无 CORS 跨域限制';
+        proxyBannerEl.className = 'proxy-banner ok';
+        proxyBannerEl.innerHTML = '<b>🟢 已连接本机同源流式代理（无 CORS 限制）</b>：无论填 <code>127.0.0.1</code> 还是 DeepSeek / 云端中转站均可直接流式对话。';
+      } else if (location.protocol === 'file:') {
+        proxyPillEl.className = 'proxy-pill direct';
+        proxyPillEl.textContent = '🟡 离线直连';
+        proxyPillEl.title = '当前为双击 file:// 离线打开；若调模型遇到 CORS 报错，请双击同目录「*-AI导师.bat」';
+        proxyBannerEl.className = 'proxy-banner direct';
+        proxyBannerEl.innerHTML = '<b>🟡 当前为 file:// 离线直连模式</b>：多数本机网关/API 会拦截浏览器跨域预检。遇到 <code>Failed to fetch</code> 时，请改用<b>双击同目录 <code>*-AI导师.bat</code></b>（或运行 <code>serve_map.py</code>）打开。';
+      } else {
+        proxyPillEl.className = 'proxy-pill direct';
+        proxyPillEl.textContent = '🟡 直连模式';
+        proxyPillEl.title = '未检测到 serve_map.py 同源代理；跨端口或跨域名接口可能被 CORS 拦截';
+        proxyBannerEl.className = 'proxy-banner direct';
+        proxyBannerEl.innerHTML = '<b>🟡 当前为静态服务直连模式</b>：未挂载 <code>/__llm_proxy__</code>。若目标接口未放行 CORS，请改用同目录 <code>*-AI导师.bat</code>（或 <code>serve_map.py</code>）启动。';
+      }
+    }
+
+    async function detectLocalProxy() {
+      if (location.protocol === 'http:' || location.protocol === 'https:') {
+        try {
+          const res = await fetch('/__llm_proxy__/health', { cache: 'no-store' });
+          if (res.ok) {
+            const info = await res.json();
+            if (info && info.ok === true) state.proxyReady = true;
+          }
+        } catch {}
+      }
+      updateProxyIndicators();
+    }
+
+    function emptyStudy() {
+      return {
+        version: 3,
+        projectTitle: DATA.projectTitle || 'CodeMap',
+        cardViews: {},
+        cardQuestions: {},
+        fileQuestions: {},
+        scenarioMaxStep: {},
+        messages: [],
+        memorySummary: ''
+      };
+    }
+
+    function loadStudy() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(STUDY_KEY) || 'null');
+        if (raw && typeof raw === 'object' && Array.isArray(raw.messages)) {
+          return Object.assign(emptyStudy(), raw);
+        }
+      } catch {}
+      return emptyStudy();
+    }
+
+    let study = loadStudy();
+    function saveStudy() {
+      try { localStorage.setItem(STUDY_KEY, JSON.stringify(study)); } catch {}
+      updateStudyMeter();
+    }
+
+    function updateStudyMeter() {
+      const viewedCount = Object.keys(study.cardViews).length;
+      const totalCards = DATA.cards.length;
+      const askedCount = study.messages.filter(m => m.role === 'user' && !m.isReport).length;
+      document.getElementById('studyStatsText').textContent =
+        `已探索 ${viewedCount}/${totalCards} 张卡 · 已提问 ${askedCount} 次`;
+    }
+
+    // ── 1. Header Bars ──
+    function renderTopBars() {
+      const chainBar = document.getElementById('chainBar');
+      chainBar.querySelectorAll('.pill').forEach(el => el.remove());
+
+      const allPill = document.createElement('button');
+      allPill.className = 'pill' + (state.activeChainId === 'ALL' && !state.activeScenarioId ? ' active' : '');
+      allPill.textContent = '🌐 全部链路总览';
+      allPill.addEventListener('click', () => activateChain('ALL'));
+      chainBar.appendChild(allPill);
+
+      DATA.chains.forEach(ch => {
+        const pill = document.createElement('button');
+        const active = state.activeChainId === ch.id && !state.activeScenarioId;
+        pill.className = 'pill' + (active ? ' active' : '');
+        if (active && ch.color) {
+          pill.style.background = ch.color;
+          pill.style.borderColor = ch.color;
+        }
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        dot.style.background = active ? '#fff' : (ch.color || '#2563eb');
+        pill.appendChild(dot);
+        pill.appendChild(document.createTextNode(ch.name));
+        pill.addEventListener('click', () => activateChain(ch.id));
+        chainBar.appendChild(pill);
+      });
+
+      const showOtherToggle = state.activeChainId !== 'ALL' && !state.activeScenarioId;
+      otherModeBtn.classList.toggle('show', showOtherToggle);
+      otherModeBtn.textContent = state.hideOtherChains ? '当前：隐藏其他链路' : '当前：淡化其他链路';
+
+      const scenarioBar = document.getElementById('scenarioBar');
+      const scenarios = DATA.scenarios || [];
+      document.getElementById('scenarioDivider').style.display = scenarios.length ? '' : 'none';
+      scenarioBar.style.display = scenarios.length ? 'flex' : 'none';
+      scenarioBar.querySelectorAll('.pill').forEach(el => el.remove());
+
+      scenarios.forEach(sc => {
+        const type = sc.badgeType || 'normal';
+        const pill = document.createElement('button');
+        const active = state.activeScenarioId === sc.id;
+        pill.className = 'pill' + (active ? ` scenario-active-${type}` : '');
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        dot.style.background = (STAGE_COLORS[type] || STAGE_COLORS.normal).badgeBg;
+        pill.appendChild(dot);
+        pill.appendChild(document.createTextNode(sc.name));
+        pill.title = sc.summary || sc.name;
+        pill.addEventListener('click', () => {
+          if (state.activeScenarioId === sc.id) exitScenario();
+          else activateScenario(sc.id);
+        });
+        scenarioBar.appendChild(pill);
+      });
+    }
+
+    // ── 2. Left Drawer File Tabs (Draggable to AI) ──
+    function renderFileTabs() {
+      drawerTabs.innerHTML = '';
+      const lockedChain = (!state.activeScenarioId && state.activeChainId !== 'ALL' && !state.showAllFilesInDrawer)
+        ? state.activeChainId : null;
+
+      DATA.files.forEach(f => {
+        const key = f.key || f;
+        const chains = f.chainIds || [];
+        if (lockedChain && chains.length && !chains.includes(lockedChain)) return;
+        const btn = document.createElement('button');
+        btn.className = 'file-tab' + (state.currentFile === key ? ' active' : '');
+        btn.textContent = key;
+        btn.title = `${f.path || key}（可拖动此标签到右侧 AI 窗口引用整类）`;
+        btn.draggable = true;
+        btn.addEventListener('dragstart', ev => {
+          ev.dataTransfer.setData('application/x-codemap-quote', JSON.stringify({ type: 'file', fileKey: key }));
+          openAiPanel();
+        });
+        btn.addEventListener('click', () => renderCodeFile(key, [], null, 'normal'));
+        drawerTabs.appendChild(btn);
+      });
+
+      const quoteFileBtn = document.createElement('button');
+      quoteFileBtn.className = 'file-tab';
+      quoteFileBtn.style.marginLeft = 'auto';
+      quoteFileBtn.style.color = '#6d28d9';
+      quoteFileBtn.style.fontWeight = '600';
+      quoteFileBtn.textContent = '📎 引用当前类';
+      quoteFileBtn.addEventListener('click', () => {
+        if (state.currentFile) {
+          addQuote({ type: 'file', fileKey: state.currentFile });
+          openAiPanel();
+        }
+      });
+      drawerTabs.appendChild(quoteFileBtn);
+
+      if (state.activeChainId !== 'ALL' && !state.activeScenarioId) {
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'file-tab';
+        toggleBtn.style.color = '#2563eb';
+        toggleBtn.textContent = state.showAllFilesInDrawer ? '只看本链' : '全部文件';
+        toggleBtn.addEventListener('click', () => {
+          state.showAllFilesInDrawer = !state.showAllFilesInDrawer;
+          renderFileTabs();
+        });
+        drawerTabs.appendChild(toggleBtn);
+      }
+    }
+
+    // ── 3. Edge Path Computation ──
+    function computeEdgePath(a, b, e) {
+      const ax = a.x + a.w / 2, ay = a.y + a.h / 2;
+      const bx = b.x + b.w / 2, by = b.y + b.h / 2;
+      let dir = e.dir || 'auto';
+      if (dir === 'auto') {
+        const dx = bx - ax, dy = by - ay;
+        if (Math.abs(dx) >= Math.abs(dy)) dir = dx >= 0 ? 'right' : 'left';
+        else dir = dy >= 0 ? 'down' : 'up';
+      }
+      let sx, sy, ex, ey, d;
+      if (dir === 'right') {
+        sx = a.x + a.w; sy = ay; ex = b.x; ey = by;
+        const cx = (sx + ex) / 2;
+        d = `M ${sx} ${sy} C ${cx} ${sy}, ${cx} ${ey}, ${ex} ${ey}`;
+        return { d, lx: cx, ly: (sy + ey) / 2 - 4 };
+      }
+      if (dir === 'left') {
+        sx = a.x; sy = ay; ex = b.x + b.w; ey = by;
+        const cx = (sx + ex) / 2;
+        d = `M ${sx} ${sy} C ${cx} ${sy}, ${cx} ${ey}, ${ex} ${ey}`;
+        return { d, lx: cx, ly: (sy + ey) / 2 - 4 };
+      }
+      if (dir === 'up') {
+        sx = ax; sy = a.y; ex = bx; ey = b.y + b.h;
+        const cy = (sy + ey) / 2;
+        d = `M ${sx} ${sy} C ${sx} ${cy}, ${ex} ${cy}, ${ex} ${ey}`;
+        return { d, lx: (sx + ex) / 2, ly: cy };
+      }
+      sx = ax; sy = a.y + a.h; ex = bx; ey = b.y;
+      const cy = (sy + ey) / 2;
+      d = `M ${sx} ${sy} C ${sx} ${cy}, ${ex} ${cy}, ${ex} ${ey}`;
+      return { d, lx: (sx + ex) / 2, ly: cy };
+    }
+
+    // ── 4. Render Full SVG Whiteboard ──
+    function renderScene() {
+      vpEl.innerHTML = '';
+
+      const activeScenario = state.activeScenarioId ? scenarioMap.get(state.activeScenarioId) : null;
+      const scSteps = activeScenario ? (activeScenario.steps || []) : [];
+      const cardStepsMap = new Map();
+      scSteps.forEach((st, idx) => {
+        if (!cardStepsMap.has(st.cardId)) cardStepsMap.set(st.cardId, []);
+        cardStepsMap.get(st.cardId).push({ idx: idx + 1, stageType: st.stageType || 'normal' });
+      });
+
+      const isHiddenChain = (cid) => !activeScenario && state.activeChainId !== 'ALL' && state.hideOtherChains && cid !== state.activeChainId;
+      const isDimmedChain = (cid) => !activeScenario && state.activeChainId !== 'ALL' && !state.hideOtherChains && cid !== state.activeChainId;
+
+      // 4A. Groups
+      const groupsLayer = svgNode('g', { id: 'layer-groups' });
+      DATA.groups.forEach(g => {
+        if (isHiddenChain(g.chainId)) return;
+        const th = themes[g.theme] || Object.values(themes)[0];
+        const wrap = svgNode('g', { class: 'group-wrap' + (isDimmedChain(g.chainId) || activeScenario ? ' dimmed' : '') });
+        wrap.appendChild(svgNode('rect', {
+          x: g.x, y: g.y, width: g.w, height: g.h, rx: 14, ry: 14,
+          fill: th.groupBg || 'rgba(241,245,249,0.5)', stroke: th.edge || '#94a3b8',
+          'stroke-width': 1.2, 'stroke-dasharray': '6 4'
+        }));
+        const label = svgNode('text', {
+          x: g.x + 14, y: g.y + 22, 'font-size': 12.5, 'font-weight': '700', fill: th.badgeFg || '#334155'
+        });
+        label.textContent = g.title;
+        wrap.appendChild(label);
+        groupsLayer.appendChild(wrap);
+      });
+      vpEl.appendChild(groupsLayer);
+
+      // 4B. Edges
+      const edgesLayer = svgNode('g', { id: 'layer-edges' });
+      DATA.edges.forEach(e => {
+        const a = cardMap.get(e.from);
+        const b = cardMap.get(e.to);
+        if (!a || !b) return;
+        if (isHiddenChain(a.chainId) || isHiddenChain(b.chainId)) return;
+        const { d, lx, ly } = computeEdgePath(a, b, e);
+        const th = themes[b.theme];
+        const dimmed = activeScenario || isDimmedChain(a.chainId) || isDimmedChain(b.chainId);
+        const path = svgNode('path', {
+          d,
+          class: 'edge-path' + (dimmed ? ' dimmed' : ''),
+          'data-from': e.from, 'data-to': e.to,
+          stroke: e.crossChain ? '#64748b' : (th ? th.edge : '#64748b'),
+          'stroke-width': e.crossChain ? 1.6 : 1.8,
+          'stroke-dasharray': e.crossChain ? '6 4' : 'none',
+          'marker-end': 'url(#arrow-default)'
+        });
+        edgesLayer.appendChild(path);
+        if (e.label) {
+          const lg = svgNode('g', { class: 'edge-label-g' + (dimmed ? ' dimmed' : '') });
+          const pillW = estimateLabelWidth(e.label);
+          lg.appendChild(svgNode('rect', {
+            x: lx - pillW / 2, y: ly - 10, width: pillW, height: 19, rx: 9,
+            fill: '#ffffff', stroke: e.crossChain ? '#94a3b8' : (th ? th.edge : '#cbd5e1'), 'stroke-width': 1
+          }));
+          const txt = svgNode('text', {
+            x: lx, y: ly + 3, 'text-anchor': 'middle', 'font-size': 10.5, 'font-weight': '600',
+            fill: th ? th.badgeFg : '#475569'
+          });
+          txt.textContent = e.label;
+          lg.appendChild(txt);
+          edgesLayer.appendChild(lg);
+        }
+      });
+      vpEl.appendChild(edgesLayer);
+
+      // 4C. Scenario Trajectory
+      const trailLayer = svgNode('g', { id: 'layer-scenario-trail' });
+      if (activeScenario && scSteps.length > 1) {
+        for (let i = 0; i < scSteps.length - 1; i++) {
+          const stA = scSteps[i];
+          const stB = scSteps[i + 1];
+          const a = cardMap.get(stA.cardId);
+          const b = cardMap.get(stB.cardId);
+          if (!a || !b || a.id === b.id) continue;
+          const { d } = computeEdgePath(a, b, { dir: 'auto' });
+          const stType = stB.stageType || 'normal';
+          const col = (STAGE_COLORS[stType] || STAGE_COLORS.normal).stroke;
+          const isReached = i < state.scenarioStepIdx;
+          trailLayer.appendChild(svgNode('path', {
+            d, fill: 'none', stroke: col,
+            'stroke-width': isReached ? 3.2 : 2,
+            'stroke-dasharray': isReached ? 'none' : '5 5',
+            opacity: isReached ? '0.95' : '0.32',
+            'marker-end': `url(#arrow-${stType})`
+          }));
+        }
+      }
+      vpEl.appendChild(trailLayer);
+
+      // 4D. Cards
+      const cardsLayer = svgNode('g', { id: 'layer-cards' });
+      DATA.cards.forEach(c => {
+        if (isHiddenChain(c.chainId)) return;
+        const th = themes[c.theme] || Object.values(themes)[0];
+        const isSummary = c.kind === 'summary';
+        const stepInfos = cardStepsMap.get(c.id);
+        const dimmed = activeScenario ? !stepInfos : isDimmedChain(c.chainId);
+
+        const g = svgNode('g', {
+          class: 'node-group'
+            + (dimmed ? ' dimmed' : '')
+            + (state.selectedCardId === c.id ? ' selected' : '')
+            + (state.armedCardId === c.id ? ' armed' : ''),
+          'data-id': c.id
+        });
+
+        g.appendChild(svgNode('rect', {
+          class: 'card-rect', x: c.x, y: c.y, width: c.w, height: c.h, rx: 10, ry: 10,
+          fill: isSummary ? '#f8fafc' : th.fill,
+          stroke: isSummary ? '#94a3b8' : th.stroke,
+          'stroke-width': 1.6,
+          'stroke-dasharray': isSummary ? '5 3' : 'none'
+        }));
+        g.appendChild(svgNode('rect', {
+          x: c.x, y: c.y, width: c.w, height: 5, rx: 3, fill: isSummary ? '#94a3b8' : th.stroke
+        }));
+
+        const fileTag = svgNode('text', {
+          x: c.x + 10, y: c.y + c.h - 10, 'font-size': 10, fill: '#64748b', 'font-family': 'Consolas, monospace'
+        });
+        fileTag.textContent = isSummary ? '外围概括' : c.file;
+        g.appendChild(fileTag);
+
+        const rangeTxt = isSummary ? '概括' : formatRanges(c.ranges);
+        const pillW = Math.min(96, Math.max(40, rangeTxt.length * 6.5 + 14));
+        g.appendChild(svgNode('rect', {
+          x: c.x + c.w - pillW - 8, y: c.y + c.h - 21.5, width: pillW, height: 16, rx: 8,
+          fill: isSummary ? '#e2e8f0' : th.badgeBg
+        }));
+        const pillLabel = svgNode('text', {
+          x: c.x + c.w - pillW / 2 - 8, y: c.y + c.h - 10,
+          'text-anchor': 'middle', 'font-size': 10, 'font-weight': '700',
+          fill: isSummary ? '#475569' : th.badgeFg
+        });
+        pillLabel.textContent = rangeTxt;
+        g.appendChild(pillLabel);
+
+        const fo = svgNode('foreignObject', {
+          x: c.x + 10, y: c.y + 8, width: c.w - 20, height: c.h - 30
+        });
+        const div = document.createElement('div');
+        div.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+        div.style.cssText = 'font-family:inherit;line-height:1.35;overflow:hidden;';
+        const roleHtml = c.roleBadge
+          ? `<span style="float:right;margin-left:4px;font-size:10px;font-weight:600;padding:1px 6px;border-radius:99px;background:${escapeHtml(th.badgeBg)};color:${escapeHtml(th.badgeFg)};">${escapeHtml(c.roleBadge)}</span>`
+          : '';
+        div.innerHTML = `<div style="font-size:12.5px;font-weight:700;color:#0f172a;margin-bottom:3px;word-break:break-word;">`
+                      + `<button type="button" class="card-ask-btn" title="一键引用给 AI 导师">+AI</button>${roleHtml}${escapeHtml(c.title)}</div>`
+                      + `<div style="font-size:11px;color:#475569;word-break:break-word;">${escapeHtml(c.subtitle || '')}</div>`;
+        fo.appendChild(div);
+        g.appendChild(fo);
+
+        const askBtn = div.querySelector('.card-ask-btn');
+        askBtn.addEventListener('mousedown', ev => ev.stopPropagation());
+        askBtn.addEventListener('click', ev => {
+          ev.stopPropagation();
+          addQuote({ type: 'card', cardId: c.id });
+          openAiPanel();
+        });
+
+        if (stepInfos && stepInfos.length) {
+          const stepTxt = stepInfos.map(s => s.idx).join(',');
+          const lastType = stepInfos[stepInfos.length - 1].stageType;
+          const badgeCol = (STAGE_COLORS[lastType] || STAGE_COLORS.normal).badgeBg;
+          const bw = Math.max(22, stepTxt.length * 8 + 12);
+          g.appendChild(svgNode('rect', {
+            x: c.x - 6, y: c.y - 10, width: bw, height: 22, rx: 11,
+            fill: badgeCol, stroke: '#ffffff', 'stroke-width': 2
+          }));
+          const stTxt = svgNode('text', {
+            x: c.x - 6 + bw / 2, y: c.y + 5, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': '700', fill: '#ffffff'
+          });
+          stTxt.textContent = stepTxt;
+          g.appendChild(stTxt);
+        }
+
+        // Armed card drag or normal click
+        g.addEventListener('mousedown', ev => {
+          if (state.armedCardId === c.id && ev.button === 0) {
+            ev.stopPropagation();
+            state.cardDraggingId = c.id;
+            dragGhostEl.textContent = '📎 拖给 AI：' + c.title;
+            dragGhostEl.style.left = (ev.clientX + 12) + 'px';
+            dragGhostEl.style.top = (ev.clientY - 12) + 'px';
+            dragGhostEl.style.display = 'block';
+            openAiPanel();
+          }
+        });
+
+        g.addEventListener('dblclick', ev => {
+          ev.stopPropagation();
+          state.armedCardId = (state.armedCardId === c.id) ? null : c.id;
+          if (state.armedCardId) openAiPanel();
+          renderScene();
+        });
+
+        g.addEventListener('click', ev => {
+          ev.stopPropagation();
+          if (state.dragMoved) return;
+          selectCard(c.id, true, null, 'normal');
+        });
+        cardsLayer.appendChild(g);
+      });
+      vpEl.appendChild(cardsLayer);
+    }
+
+    // ── 5. Pan, Zoom & Synced 3-Column Viewport Geometry ──
+    function syncLayoutOffsets() {
+      const leftW = drawerEl.classList.contains('open') ? drawerEl.getBoundingClientRect().width : 0;
+      const rightW = aiPanelEl.classList.contains('open') ? aiPanelEl.getBoundingClientRect().width : 0;
+      floatBarHost.style.left = (leftW + 16) + 'px';
+      floatBarHost.style.right = (rightW + 16) + 'px';
+      hintToast.style.left = (leftW + 14) + 'px';
+    }
+
+    function getVisibleStageBounds() {
+      const rect = stageEl.getBoundingClientRect();
+      const leftW = drawerEl.classList.contains('open') ? drawerEl.getBoundingClientRect().width : 0;
+      const rightW = aiPanelEl.classList.contains('open') ? aiPanelEl.getBoundingClientRect().width : 0;
+      const barH = floatBar.classList.contains('open') ? floatBar.getBoundingClientRect().height + 24 : 0;
+      const availW = Math.max(280, rect.width - leftW - rightW);
+      const availH = Math.max(240, rect.height - barH);
+      return { leftW, rightW, availW, availH };
+    }
+
+    function applyTransform() {
+      vpEl.setAttribute('transform', `translate(${state.tx}, ${state.ty}) scale(${state.scale})`);
+      zoomReadout.textContent = Math.round(state.scale * 100) + '%';
+    }
+
+    function computeVisibleBBox() {
+      const activeScenario = state.activeScenarioId ? scenarioMap.get(state.activeScenarioId) : null;
+      let targetCards = DATA.cards;
+      if (activeScenario) {
+        const ids = new Set((activeScenario.steps || []).map(s => s.cardId));
+        const scCards = DATA.cards.filter(c => ids.has(c.id));
+        if (scCards.length) targetCards = scCards;
+      } else if (state.activeChainId !== 'ALL' && state.hideOtherChains) {
+        const chCards = DATA.cards.filter(c => c.chainId === state.activeChainId);
+        if (chCards.length) targetCards = chCards;
+      }
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      targetCards.forEach(c => {
+        minX = Math.min(minX, c.x); minY = Math.min(minY, c.y);
+        maxX = Math.max(maxX, c.x + c.w); maxY = Math.max(maxY, c.y + c.h);
+      });
+      if (!activeScenario) {
+        DATA.groups.forEach(g => {
+          if (state.activeChainId !== 'ALL' && state.hideOtherChains && g.chainId !== state.activeChainId) return;
+          minX = Math.min(minX, g.x); minY = Math.min(minY, g.y);
+          maxX = Math.max(maxX, g.x + g.w); maxY = Math.max(maxY, g.y + g.h);
+        });
+      }
+      return { x: minX - 24, y: minY - 24, w: (maxX - minX) + 48, h: (maxY - minY) + 48 };
+    }
+
+    function fitToView(customBox) {
+      const { leftW, availW, availH } = getVisibleStageBounds();
+      const box = customBox || computeVisibleBBox();
+      const s = Math.min(1.15, Math.max(0.18, Math.min((availW - 36) / box.w, (availH - 36) / box.h)));
+      state.scale = s;
+      state.tx = leftW + (availW - box.w * s) / 2 - box.x * s;
+      state.ty = (availH - box.h * s) / 2 - box.y * s;
+      applyTransform();
+    }
+
+    function centerOnCard(c) {
+      if (!c) return;
+      const { leftW, availW, availH } = getVisibleStageBounds();
+      if (state.scale < 0.6) state.scale = 0.78;
+      state.tx = leftW + availW / 2 - (c.x + c.w / 2) * state.scale;
+      state.ty = availH / 2 - (c.y + c.h / 2) * state.scale;
+      applyTransform();
+    }
+
+    stageEl.addEventListener('wheel', ev => {
+      ev.preventDefault();
+      const rect = stageEl.getBoundingClientRect();
+      const mx = ev.clientX - rect.left, my = ev.clientY - rect.top;
+      const factor = ev.deltaY < 0 ? 1.12 : 0.89;
+      const nextScale = Math.min(2.2, Math.max(0.18, state.scale * factor));
+      const ratio = nextScale / state.scale;
+      state.tx = mx - (mx - state.tx) * ratio;
+      state.ty = my - (my - state.ty) * ratio;
+      state.scale = nextScale;
+      applyTransform();
+    }, { passive: false });
+
+    stageEl.addEventListener('mousedown', ev => {
+      if (ev.button !== 0 || state.cardDraggingId) return;
+      state.dragging = true; state.dragMoved = false;
+      state.dragStartX = ev.clientX - state.tx; state.dragStartY = ev.clientY - state.ty;
+      stageEl.classList.add('dragging');
+    });
+
+    function isInsideAiPanel(x, y) {
+      if (!aiPanelEl.classList.contains('open')) return false;
+      const r = aiPanelEl.getBoundingClientRect();
+      return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    }
+
+    window.addEventListener('mousemove', ev => {
+      if (state.cardDraggingId) {
+        dragGhostEl.style.left = (ev.clientX + 12) + 'px';
+        dragGhostEl.style.top = (ev.clientY - 12) + 'px';
+        aiDropOverlay.classList.toggle('active', isInsideAiPanel(ev.clientX, ev.clientY));
+        return;
+      }
+      if (!state.dragging) return;
+      const nx = ev.clientX - state.dragStartX, ny = ev.clientY - state.dragStartY;
+      if (Math.abs(nx - state.tx) > 3 || Math.abs(ny - state.ty) > 3) state.dragMoved = true;
+      state.tx = nx; state.ty = ny; applyTransform();
+    });
+
+    window.addEventListener('mouseup', ev => {
+      if (state.cardDraggingId) {
+        const cid = state.cardDraggingId;
+        state.cardDraggingId = null;
+        dragGhostEl.style.display = 'none';
+        aiDropOverlay.classList.remove('active');
+        if (isInsideAiPanel(ev.clientX, ev.clientY)) {
+          addQuote({ type: 'card', cardId: cid });
+          state.armedCardId = null;
+          renderScene();
+        }
+        return;
+      }
+      state.dragging = false; stageEl.classList.remove('dragging');
+      setTimeout(() => { state.dragMoved = false; }, 20);
+    });
+    stageEl.addEventListener('dblclick', () => fitToView());
+
+    // ── 6. Chain & Scenario Activation ──
+    function activateChain(chainId) {
+      state.activeScenarioId = null;
+      state.activeChainId = chainId;
+      state.tourStepIdx = 0;
+      state.showAllFilesInDrawer = false;
+      renderTopBars();
+      renderFileTabs();
+      renderScene();
+      renderFloatBar();
+      fitToView();
+    }
+
+    function activateScenario(scenarioId) {
+      const sc = scenarioMap.get(scenarioId);
+      if (!sc || !(sc.steps && sc.steps.length)) return;
+      state.activeScenarioId = scenarioId;
+      state.scenarioStepIdx = 0;
+      renderTopBars();
+      renderFileTabs();
+      jumpToScenarioStep(0, true);
+    }
+
+    function exitScenario() {
+      state.activeScenarioId = null;
+      renderTopBars();
+      renderFileTabs();
+      renderScene();
+      renderFloatBar();
+      fitToView();
+    }
+
+    function jumpToScenarioStep(idx, openDrawer = true) {
+      const sc = scenarioMap.get(state.activeScenarioId);
+      if (!sc || !sc.steps.length) return;
+      state.scenarioStepIdx = (idx + sc.steps.length) % sc.steps.length;
+      const step = sc.steps[state.scenarioStepIdx];
+      study.scenarioMaxStep[sc.id] = Math.max(study.scenarioMaxStep[sc.id] || 0, state.scenarioStepIdx + 1);
+      saveStudy();
+      renderScene();
+      renderFloatBar();
+      const ranges = (step.focusRanges && step.focusRanges.length) ? step.focusRanges : null;
+      selectCard(step.cardId, openDrawer, ranges, step.stageType || 'normal', step);
+      centerOnCard(cardMap.get(step.cardId));
+    }
+
+    function jumpToTourStep(idx) {
+      const ch = chainMap.get(state.activeChainId);
+      if (!ch || !(ch.tour && ch.tour.length)) return;
+      state.tourStepIdx = (idx + ch.tour.length) % ch.tour.length;
+      const cid = ch.tour[state.tourStepIdx];
+      renderFloatBar();
+      selectCard(cid, true, null, 'normal');
+      centerOnCard(cardMap.get(cid));
+    }
+
+    function renderFloatBar() {
+      const sc = state.activeScenarioId ? scenarioMap.get(state.activeScenarioId) : null;
+      if (sc && sc.steps && sc.steps.length) {
+        const step = sc.steps[state.scenarioStepIdx];
+        const stType = step.stageType || 'normal';
+        const stMeta = STAGE_COLORS[stType] || STAGE_COLORS.normal;
+        const c = cardMap.get(step.cardId);
+        floatBar.innerHTML = `
+          <div class="scenario-card">
+            <div class="sc-head">
+              <div class="sc-title">
+                <span>🎬 ${escapeHtml(sc.name)}</span>
+                <span class="sc-badge ${escapeHtml(stType)}">${escapeHtml(stMeta.label)} · ${state.scenarioStepIdx + 1}/${sc.steps.length}</span>
+                <span style="color:#64748b;font-weight:500;font-size:12px;">${c ? escapeHtml(c.title) : ''}</span>
+              </div>
+              <div class="sc-nav">
+                <button class="btn" id="scPrevBtn">◀ 上一步</button>
+                <button class="btn btn-primary" id="scNextBtn">下一步 ▶</button>
+                <button class="btn" id="scExitBtn">退出</button>
+              </div>
+            </div>
+            <div class="sc-grid">
+              <div class="sc-row"><span class="sc-k">遇到什么</span><span class="sc-v">${renderInlineText(step.situation)}</span></div>
+              <div class="sc-row"><span class="sc-k">谁来解决</span><span class="sc-v">${renderInlineText(step.resolution)}</span></div>
+              ${step.dataFlow ? `<div class="sc-row"><span class="sc-k">数据流转</span><span class="sc-flow">${escapeHtml(step.dataFlow)}</span></div>` : ''}
+            </div>
+          </div>`;
+        floatBar.classList.add('open');
+        hintToast.classList.add('hidden');
+        document.getElementById('scPrevBtn').addEventListener('click', () => jumpToScenarioStep(state.scenarioStepIdx - 1, true));
+        document.getElementById('scNextBtn').addEventListener('click', () => jumpToScenarioStep(state.scenarioStepIdx + 1, true));
+        document.getElementById('scExitBtn').addEventListener('click', exitScenario);
+        syncLayoutOffsets();
+        return;
+      }
+
+      const ch = state.activeChainId !== 'ALL' ? chainMap.get(state.activeChainId) : null;
+      if (ch && ch.tour && ch.tour.length) {
+        const cid = ch.tour[state.tourStepIdx];
+        const c = cardMap.get(cid);
+        floatBar.innerHTML = `
+          <div class="tour-compact">
+            <button class="btn" id="trPrevBtn">◀ 上一步</button>
+            <span class="tour-step-text">链路导览 · 第 ${state.tourStepIdx + 1}/${ch.tour.length} 步：${c ? escapeHtml(c.title) : cid}</span>
+            <button class="btn btn-primary" id="trNextBtn">下一步 ▶</button>
+          </div>`;
+        floatBar.classList.add('open');
+        hintToast.classList.add('hidden');
+        document.getElementById('trPrevBtn').addEventListener('click', () => jumpToTourStep(state.tourStepIdx - 1));
+        document.getElementById('trNextBtn').addEventListener('click', () => jumpToTourStep(state.tourStepIdx + 1));
+        syncLayoutOffsets();
+        return;
+      }
+
+      floatBar.classList.remove('open');
+      floatBar.innerHTML = '';
+      hintToast.classList.remove('hidden');
+      syncLayoutOffsets();
+    }
+
+    // ── 7. Left Source Drawer & Code Viewer ──
+    function selectCard(cardId, openDrawer = true, overrideRanges = null, hlStyle = 'normal', activeScenarioStep = null) {
+      const c = cardMap.get(cardId);
+      if (!c) return;
+      state.selectedCardId = cardId;
+      study.cardViews[cardId] = (study.cardViews[cardId] || 0) + 1;
+      saveStudy();
+
+      document.querySelectorAll('.node-group').forEach(el => el.classList.toggle('selected', el.dataset.id === cardId));
+      if (!state.activeScenarioId) {
+        document.querySelectorAll('.edge-path').forEach(el => {
+          const hit = el.dataset.from === cardId || el.dataset.to === cardId;
+          el.classList.toggle('active', hit);
+          el.setAttribute('marker-end', hit ? 'url(#arrow-active)' : 'url(#arrow-default)');
+        });
+      }
+
+      const th = themes[c.theme] || Object.values(themes)[0];
+      const fileBadge = document.getElementById('drawerFileBadge');
+      const lineBadge = document.getElementById('drawerLineBadge');
+      const rangesToShow = (overrideRanges && overrideRanges.length) ? overrideRanges : (c.ranges || []);
+
+      fileBadge.textContent = c.kind === 'summary' ? '外围概括卡' : c.file;
+      fileBadge.style.background = c.kind === 'summary' ? '#f1f5f9' : th.badgeBg;
+      fileBadge.style.color = c.kind === 'summary' ? '#475569' : th.badgeFg;
+      fileBadge.style.borderColor = c.kind === 'summary' ? '#cbd5e1' : th.edge;
+      lineBadge.textContent = c.kind === 'summary' ? '概括节点' : formatRanges(rangesToShow);
+      document.getElementById('drawerTitle').textContent = c.title;
+
+      let noteHtml = '';
+      if (activeScenarioStep) {
+        const stType = activeScenarioStep.stageType || 'normal';
+        noteHtml += `<div class="sc-ctx ${escapeHtml(stType)}"><b>🎬 当前剧本聚焦：</b>${renderInlineText(activeScenarioStep.situation)} → <b>${renderInlineText(activeScenarioStep.resolution)}</b></div>`;
+      }
+      noteHtml += `<div>${renderInlineText(c.note || '')}</div>`;
+      if (c.interview) {
+        const iv = String(c.interview).replace(/^【面试追问】\s*/, '');
+        noteHtml += `<div class="interview-box"><b>💡 面试高频追问：</b>${renderInlineText(iv)}</div>`;
+      }
+      if (c.extraTag) noteHtml += `<div class="extra-tag">${escapeHtml(c.extraTag)}</div>`;
+      noteBox.innerHTML = noteHtml;
+
+      if (openDrawer) {
+        drawerEl.classList.add('open');
+        drawerEl.setAttribute('aria-hidden', 'false');
+        syncLayoutOffsets();
+      }
+
+      if (c.kind === 'summary') renderSummaryPanel(c);
+      else renderCodeFile(c.file, rangesToShow, rangesToShow.length ? rangesToShow[0][0] : null, hlStyle);
+    }
+
+    function renderSummaryPanel(c) {
+      const neighbors = [];
+      DATA.edges.forEach(e => {
+        if (e.from === c.id && cardMap.has(e.to)) neighbors.push({ dir: '下游 →', card: cardMap.get(e.to) });
+        if (e.to === c.id && cardMap.has(e.from)) neighbors.push({ dir: '上游 ←', card: cardMap.get(e.from) });
+      });
+      const btnsHtml = neighbors.map(n =>
+        `<button class="neighbor-btn" data-jump="${escapeHtml(n.card.id)}">${escapeHtml(n.dir)} ${escapeHtml(n.card.title)}</button>`
+      ).join('');
+      codeWrap.innerHTML = `
+        <div class="summary-panel">
+          <div class="summary-card-box">
+            <b>为什么没有嵌入全文源码？</b><br>
+            该节点属于外围衔接组件（DTO / 简单配置 / 常规边界），职责单一且不含并发或算法难点；为了保持源码抽屉聚焦在核心类上，这里仅在画布保留流程衔接。<br><br>
+            <b>职责摘要：</b>${renderInlineText(c.note || c.subtitle || '')}
+          </div>
+          ${neighbors.length ? `<div><b>关联核心节点（点击直接跳转看真源码）：</b><div class="neighbor-list">${btnsHtml}</div></div>` : ''}
+        </div>`;
+      codeWrap.querySelectorAll('[data-jump]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = cardMap.get(btn.dataset.jump);
+          if (target) { selectCard(target.id, true); centerOnCard(target); }
+        });
+      });
+    }
+
+    function lineToCardLookup(fname) {
+      const map = new Map();
+      DATA.cards.filter(c => c.kind !== 'summary' && c.file === fname).forEach(c => {
+        (c.ranges || []).forEach(([s, e]) => {
+          for (let ln = s; ln <= e; ln++) if (!map.has(ln)) map.set(ln, c.id);
+        });
+      });
+      return map;
+    }
+
+    function renderCodeFile(fname, hlRanges = [], scrollToLine = null, hlStyle = 'normal') {
+      state.currentFile = fname;
+      renderFileTabs();
+
+      const lines = DATA.sources[fname] || [];
+      const lineOwner = lineToCardLookup(fname);
+      const hlSet = new Set();
+      (hlRanges || []).forEach(([s, e]) => { for (let i = s; i <= e; i++) hlSet.add(i); });
+
+      const table = document.createElement('table');
+      table.className = 'code-table';
+      const frag = document.createDocumentFragment();
+      const hlClass = hlSet.size ? ` hl-${hlStyle}` : '';
+
+      lines.forEach((rawLine, idx) => {
+        const ln = idx + 1;
+        const ownerId = lineOwner.get(ln);
+        const tr = document.createElement('tr');
+        tr.className = 'code-row' + (hlSet.has(ln) ? hlClass : '') + (ownerId ? ' mapped' : '');
+        tr.id = 'L-' + ln;
+        if (ownerId) {
+          tr.title = '点击反查画布卡片：' + cardMap.get(ownerId).title;
+          tr.addEventListener('click', () => {
+            selectCard(ownerId, true);
+            centerOnCard(cardMap.get(ownerId));
+          });
+        }
+        const tdLn = document.createElement('td'); tdLn.className = 'ln'; tdLn.textContent = ln;
+        const tdSrc = document.createElement('td'); tdSrc.className = 'src'; tdSrc.innerHTML = highlightLine(rawLine);
+        tr.appendChild(tdLn); tr.appendChild(tdSrc); frag.appendChild(tr);
+      });
+      table.appendChild(frag);
+      codeWrap.innerHTML = '';
+      codeWrap.appendChild(table);
+
+      if (scrollToLine) {
+        const targetRow = document.getElementById('L-' + scrollToLine);
+        if (targetRow) requestAnimationFrame(() => codeWrap.scrollTo({ top: Math.max(0, targetRow.offsetTop - 90), behavior: 'smooth' }));
+      } else {
+        codeWrap.scrollTop = 0;
+      }
+    }
+
+    const KEYWORDS = new Set([
+      'package','import','export','from','as','public','private','protected','static','final','const','let','var',
+      'class','interface','record','enum','struct','type','trait','impl','fn','func','def','async','await','void',
+      'return','if','elif','else','switch','case','default','match','for','while','break','continue','try','catch',
+      'except','finally','throw','throws','raise','new','this','self','super','synchronized','extends','implements',
+      'true','false','null','None','undefined','boolean','int','long','double','string','number','Promise','Result'
+    ]);
+    const TOKEN_RE = /(\/\/.*$|\/\*[\s\S]*?\*\/|#.*$|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|@[A-Za-z_]\w*|\b\d+(?:\.\d+)?[Ll]?\b|\b[A-Za-z_]\w*\b)/gm;
+
+    function highlightLine(line) {
+      if (!line) return ' ';
+      let out = '', last = 0, m;
+      TOKEN_RE.lastIndex = 0;
+      while ((m = TOKEN_RE.exec(line)) !== null) {
+        if (m.index > last) out += escapeHtml(line.slice(last, m.index));
+        const tok = m[0];
+        if (tok.startsWith('//') || tok.startsWith('/*') || tok.startsWith('#')) out += `<span class="tok-com">${escapeHtml(tok)}</span>`;
+        else if (tok.startsWith('"') || tok.startsWith("'") || tok.startsWith('`')) out += `<span class="tok-str">${escapeHtml(tok)}</span>`;
+        else if (tok.startsWith('@')) out += `<span class="tok-ann">${escapeHtml(tok)}</span>`;
+        else if (/^\d/.test(tok)) out += `<span class="tok-num">${escapeHtml(tok)}</span>`;
+        else if (KEYWORDS.has(tok)) out += `<span class="tok-kw">${escapeHtml(tok)}</span>`;
+        else out += escapeHtml(tok);
+        last = m.index + tok.length;
+      }
+      if (last < line.length) out += escapeHtml(line.slice(last));
+      return out;
+    }
+
+    // ── 8. Right AI Tutor: Quotes, 4-Layer Context, Streaming, Diagnosis Report, Backup ──
+    function openAiPanel() {
+      aiPanelEl.classList.add('open');
+      aiPanelEl.setAttribute('aria-hidden', 'false');
+      syncLayoutOffsets();
+    }
+
+    function addQuote(q) {
+      const dup = state.quotes.some(x => x.type === q.type && (q.type === 'card' ? x.cardId === q.cardId : x.fileKey === q.fileKey));
+      if (!dup) state.quotes.push(q);
+      renderQuoteTray();
+    }
+
+    function renderQuoteTray() {
+      if (!state.quotes.length) {
+        quoteTrayEl.classList.remove('show');
+        quoteTrayEl.innerHTML = '';
+        return;
+      }
+      const ctxText = buildQuoteContextBlock(state.quotes);
+      quoteTrayEl.classList.add('show');
+      quoteTrayEl.innerHTML = '';
+      state.quotes.forEach((q, idx) => {
+        const chip = document.createElement('span');
+        chip.className = 'quote-chip';
+        const label = q.type === 'card'
+          ? '📎 ' + (cardMap.get(q.cardId)?.title || q.cardId)
+          : '📄 整类：' + q.fileKey;
+        chip.appendChild(document.createTextNode(label));
+        const rm = document.createElement('button');
+        rm.textContent = '×';
+        rm.title = '移除引用';
+        rm.addEventListener('click', () => { state.quotes.splice(idx, 1); renderQuoteTray(); });
+        chip.appendChild(rm);
+        quoteTrayEl.appendChild(chip);
+      });
+      const meter = document.createElement('span');
+      meter.className = 'ctx-meter';
+      meter.textContent = `本次上下文约 ${ctxText.length} 字`;
+      quoteTrayEl.appendChild(meter);
+    }
+
+    // HTML5 Drag & Drop from left source drawer into AI panel
+    document.getElementById('drawerDragHeader').addEventListener('dragstart', ev => {
+      if (state.selectedCardId) {
+        ev.dataTransfer.setData('application/x-codemap-quote', JSON.stringify({ type: 'card', cardId: state.selectedCardId }));
+      } else if (state.currentFile) {
+        ev.dataTransfer.setData('application/x-codemap-quote', JSON.stringify({ type: 'file', fileKey: state.currentFile }));
+      }
+      openAiPanel();
+    });
+
+    aiPanelEl.addEventListener('dragover', ev => {
+      if (ev.dataTransfer && Array.from(ev.dataTransfer.types || []).includes('application/x-codemap-quote')) {
+        ev.preventDefault();
+        aiDropOverlay.classList.add('active');
+      }
+    });
+    aiPanelEl.addEventListener('dragleave', ev => {
+      if (!aiPanelEl.contains(ev.relatedTarget)) aiDropOverlay.classList.remove('active');
+    });
+    aiPanelEl.addEventListener('drop', ev => {
+      aiDropOverlay.classList.remove('active');
+      const raw = ev.dataTransfer && ev.dataTransfer.getData('application/x-codemap-quote');
+      if (!raw) return;
+      ev.preventDefault();
+      try { addQuote(JSON.parse(raw)); } catch {}
+    });
+
+    // Layer 1: Global Skeleton + 4 Practical Teaching Rules
+    function buildGlobalSkeleton() {
+      const chainLines = DATA.chains.map(ch => {
+        const titles = DATA.cards.filter(c => c.chainId === ch.id).map(c => `${c.title}(${c.kind === 'summary' ? '概括' : c.file})`).join(' → ');
+        return `- ${ch.name}：${ch.description || ''}\n  节点：${titles}`;
+      }).join('\n');
+      const scLines = (DATA.scenarios || []).map(s => `- ${s.name}：${s.summary || ''}`).join('\n');
+      return `项目：${DATA.projectTitle || ''}\n核心链路与节点分布：\n${chainLines}` + (scLines ? `\n预置真实场景剧本：\n${scLines}` : '');
+    }
+
+    function buildSystemPrompt() {
+      return `你是一个贴身陪读源码的资深架构导师。下面提供的是本项目交互式导图的全局目录，以及用户本轮拖拽/点选引用的精确源码。
+
+${buildGlobalSkeleton()}
+
+请严格遵守以下 4 条教学规矩：
+1. 【严禁瞎编】只依据本轮注入的真实源码、行号与导图目录作答；如果用户问到导图尚未收录的外围文件细节，直接坦白“当前导图未嵌入该文件完整源码，如需查看请核对本地磁盘”。
+2. 【先人话后代码】先用大白话和生活化类比讲清核心原理，再指出具体文件名与行号（如 L28-40）。
+3. 【带出上下文因果】解释一段逻辑时，主动点明“上游是谁调过来的、下游影响了谁、如果删掉或改错会出什么线上故障”。
+4. 【启发式收尾】每次解答末尾顺手提 1 个简短的小追问，帮用户检验是否真正理解。`
+        + (study.memorySummary ? `\n\n【更早对话要点摘要】\n${study.memorySummary}` : '');
+    }
+
+    // Layer 2: Precise Quote Context Assembly (±15-line buffer + 1-hop graph + scenario)
+    function sliceLinesWithNumbers(lines, s, e) {
+      const out = [];
+      for (let ln = Math.max(1, s); ln <= Math.min(lines.length, e); ln++) {
+        out.push(`L${ln}: ${lines[ln - 1]}`);
+      }
+      return out.join('\n');
+    }
+
+    function buildQuoteContextBlock(quotes) {
+      if (!quotes || !quotes.length) return '';
+      const activeSc = state.activeScenarioId ? scenarioMap.get(state.activeScenarioId) : null;
+      const activeStep = activeSc && activeSc.steps ? activeSc.steps[state.scenarioStepIdx] : null;
+      const parts = [];
+
+      quotes.forEach((q, idx) => {
+        if (q.type === 'card') {
+          const c = cardMap.get(q.cardId);
+          if (!c) return;
+          const up = DATA.edges.filter(e => e.to === c.id).map(e => cardMap.get(e.from)?.title).filter(Boolean);
+          const down = DATA.edges.filter(e => e.from === c.id).map(e => cardMap.get(e.to)?.title).filter(Boolean);
+          let sec = `### 引用 #${idx + 1}（画布卡片）：${c.title}\n- 所属链路：${chainMap.get(c.chainId)?.name || c.chainId}\n- 摘要：${c.subtitle || ''}\n- 笔记：${c.note || ''}`;
+          if (up.length) sec += `\n- 上游来源：${up.join('、')}`;
+          if (down.length) sec += `\n- 下游去向：${down.join('、')}`;
+          if (activeStep && activeStep.cardId === c.id) {
+            sec += `\n- 当前正处于剧本「${activeSc.name}」第 ${state.scenarioStepIdx + 1} 步：${activeStep.situation} → ${activeStep.resolution}`;
+          }
+          if (c.kind !== 'summary' && c.file && DATA.sources[c.file]) {
+            const lines = DATA.sources[c.file];
+            const blocks = (c.ranges || []).map(([s, e]) => sliceLinesWithNumbers(lines, s - 15, e + 15)).join('\n...\n');
+            sec += `\n- 真实源码（${c.file}，已含核心区间 ${formatRanges(c.ranges)} 及前后各15行上下文）：\n\`\`\`\n${blocks}\n\`\`\``;
+          }
+          parts.push(sec);
+        } else if (q.type === 'file' && DATA.sources[q.fileKey]) {
+          const lines = DATA.sources[q.fileKey];
+          let code = sliceLinesWithNumbers(lines, 1, lines.length);
+          if (code.length > 28000) code = code.slice(0, 28000) + '\n...（文件较长，已截断至前 28000 字）';
+          parts.push(`### 引用 #${idx + 1}（完整类源码）：${q.fileKey}（共 ${lines.length} 行）\n\`\`\`\n${code}\n\`\`\``);
+        }
+      });
+      return parts.join('\n\n');
+    }
+
+    // Layer 3: 6-Turn Sliding Window + Past Quote Deduplication + Rolling Summary
+    function getConversationPairsSource() {
+      const msgs = study.messages;
+      const clean = [];
+      for (let i = 0; i < msgs.length; i++) {
+        const m = msgs[i];
+        if (m.isReport || m.isError) continue;
+        if (m.role === 'user' && msgs[i + 1] && msgs[i + 1].role === 'assistant' && msgs[i + 1].isError) {
+          continue;
+        }
+        clean.push(m);
+      }
+      return clean;
+    }
+
+    function buildApiMessages(userText, quotes) {
+      const apiMsgs = [{ role: 'system', content: buildSystemPrompt() }];
+      const recent = getConversationPairsSource().slice(-12);
+      recent.forEach(m => {
+        if (m.role === 'user') {
+          const tag = (m.quotes && m.quotes.length)
+            ? '[曾引用: ' + m.quotes.map(q => q.type === 'card' ? (cardMap.get(q.cardId)?.title || q.cardId) : q.fileKey).join('、') + ']\n'
+            : '';
+          apiMsgs.push({ role: 'user', content: tag + m.text });
+        } else {
+          apiMsgs.push({ role: 'assistant', content: m.text });
+        }
+      });
+      const ctx = buildQuoteContextBlock(quotes);
+      const currentPrompt = ctx ? `${userText}\n\n=== 本轮引用的精确上下文 ===\n${ctx}` : userText;
+      apiMsgs.push({ role: 'user', content: currentPrompt });
+      return apiMsgs;
+    }
+
+    function compactOldMemoryIfNeeded() {
+      const nonReport = getConversationPairsSource();
+      if (nonReport.length <= 14) return;
+      const oldMsgs = nonReport.slice(0, nonReport.length - 12);
+      const bullets = [];
+      for (const m of oldMsgs) {
+        if (m.role !== 'user') continue;
+        const qNames = (m.quotes || []).map(q => q.type === 'card' ? (cardMap.get(q.cardId)?.title || q.cardId) : q.fileKey);
+        bullets.push(`- 问${qNames.length ? '[' + qNames.join('+') + ']' : ''}：${m.text.slice(0, 50)}`);
+      }
+      study.memorySummary = bullets.slice(-10).join('\n').slice(0, 800);
+    }
+
+    // OpenAI-Compatible Streaming Client (via same-origin local proxy when available)
+    function normalizeChatEndpoint(raw) {
+      const u = String(raw || '').trim().replace(/\/+$/, '');
+      if (!u) return '';
+      if (/\/chat\/completions$/i.test(u)) return u;
+      if (/\/(v\d+(?:beta\d*)?|openai)$/i.test(u)) return u + '/chat/completions';
+      return u + '/v1/chat/completions';
+    }
+
+    function isLoopbackUrl(url) {
+      return /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(?::\d+)?(\/|$)/i.test(String(url || '').trim());
+    }
+
+    function formatHttpErrorText(status, rawText) {
+      let msg = String(rawText || '').trim();
+      try {
+        const j = JSON.parse(msg);
+        const extracted = j?.error?.message || j?.message || j?.detail || j?.error;
+        if (typeof extracted === 'string' && extracted.trim()) msg = extracted.trim();
+      } catch {}
+      return `HTTP ${status}${msg ? '：' + msg.slice(0, 300) : ''}`;
+    }
+
+    async function postOpenAiRequest(cfg, payload, signal) {
+      const endpoint = normalizeChatEndpoint(cfg.baseUrl);
+      if (state.proxyReady) {
+        return fetch('/__llm_proxy__', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint, apiKey: cfg.apiKey || '', payload }),
+          signal
+        });
+      }
+      const headers = { 'Content-Type': 'application/json' };
+      if (cfg.apiKey && cfg.apiKey.trim()) {
+        headers['Authorization'] = 'Bearer ' + cfg.apiKey.trim();
+      }
+      return fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        signal
+      });
+    }
+
+    async function streamOpenAiChat(cfg, messages, onDelta, signal, onReasoning) {
+      const res = await postOpenAiRequest(cfg, { model: cfg.model, stream: true, messages }, signal);
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(formatHttpErrorText(res.status, errText));
+      }
+      const ctype = (res.headers.get('content-type') || '').toLowerCase();
+      if (ctype.includes('application/json') && !ctype.includes('text/event-stream')) {
+        const json = await res.json();
+        const text = json?.choices?.[0]?.message?.content || '';
+        if (text) onDelta(text);
+        return;
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buf = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split(/\r?\n/);
+        buf = lines.pop();
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (!line.startsWith('data:')) continue;
+          const dataStr = line.slice(5).trim();
+          if (!dataStr || dataStr === '[DONE]') return;
+          try {
+            const parsed = JSON.parse(dataStr);
+            const deltaObj = parsed?.choices?.[0]?.delta || {};
+            if (typeof deltaObj.reasoning_content === 'string' && deltaObj.reasoning_content.length && onReasoning) {
+              onReasoning(deltaObj.reasoning_content);
+            }
+            const delta = deltaObj.content;
+            if (typeof delta === 'string' && delta.length) onDelta(delta);
+          } catch {}
+        }
+      }
+    }
+
+    async function testConnection() {
+      const btn = document.getElementById('testCfgBtn');
+      const statusEl = document.getElementById('cfgTestStatus');
+      const draft = {
+        baseUrl: document.getElementById('cfgBaseUrl').value.trim(),
+        apiKey: document.getElementById('cfgApiKey').value.trim(),
+        model: document.getElementById('cfgModel').value.trim()
+      };
+      const problem = validateConfigObject(draft);
+      if (problem) {
+        statusEl.className = 'cfg-status err';
+        statusEl.textContent = problem;
+        return;
+      }
+      btn.disabled = true;
+      statusEl.className = 'cfg-status pending';
+      statusEl.textContent = `⏳ 正在测试连接（${state.proxyReady ? '走本机同源代理' : '浏览器直连'}）...`;
+      const t0 = performance.now();
+      try {
+        const res = await postOpenAiRequest(draft, {
+          model: draft.model,
+          stream: false,
+          max_tokens: 16,
+          messages: [{ role: 'user', content: 'Reply OK' }]
+        });
+        const elapsed = Math.round(performance.now() - t0);
+        if (!res.ok) {
+          const errText = await res.text().catch(() => '');
+          statusEl.className = 'cfg-status err';
+          statusEl.textContent = `❌ ${formatHttpErrorText(res.status, errText)}`;
+          return;
+        }
+        await res.text().catch(() => '');
+        statusEl.className = 'cfg-status ok';
+        statusEl.textContent = `🟢 连接成功（${elapsed} ms · ${state.proxyReady ? '走本机代理' : '直连'}），记得点「保存配置」`;
+      } catch (err) {
+        statusEl.className = 'cfg-status err';
+        if (err instanceof TypeError) {
+          statusEl.textContent = state.proxyReady
+            ? '❌ 本地代理 serve_map.py 未响应，请重新打开同目录「*-AI导师.bat」。'
+            : '❌ 浏览器 CORS 拦截或目标未启动：请双击同目录「*-AI导师.bat」通过本机代理打开。';
+        } else {
+          statusEl.textContent = `❌ ${err.message}`;
+        }
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // Safe Markdown Renderer for AI Replies
+    function renderAiMarkdown(raw) {
+      const escaped = escapeHtml(raw || '');
+      const blocks = [];
+      let text = escaped.replace(/```[^\n]*\n([\s\S]*?)```/g, (_, code) => {
+        const idx = blocks.length;
+        blocks.push(`<pre>${code}</pre>`);
+        return `\u0000BLOCK_${idx}\u0000`;
+      });
+      text = text
+        .replace(/^###\s+(.+)$/gm, '<h4>$1</h4>')
+        .replace(/^##\s+(.+)$/gm, '<h3>$1</h3>')
+        .replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
+        .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
+        .replace(/`([^`\n]+)`/g, '<code class="inline-code">$1</code>')
+        .replace(/\n/g, '<br>');
+      return text.replace(/\u0000BLOCK_(\d+)\u0000/g, (_, i) => blocks[Number(i)]);
+    }
+
+    function renderMessages() {
+      aiMessagesEl.innerHTML = '';
+      if (!study.messages.length) {
+        aiMessagesEl.innerHTML = `
+          <div class="ai-welcome">
+            <b>👋 欢迎来到三栏源码私教台</b><br>
+            1. 先点右上角 <b>⚙️ 配置</b> 填好模型地址、Key 和模型名，点 <b>🔌 测试连接</b> 验证（若双击 HTML 遇 CORS 报错，请双击同目录 <code>*-AI导师.bat</code> 打开）。<br>
+            2. <b>引用上下文给 AI</b>：<br>
+            &nbsp;&nbsp;• 画布上<b>双击卡片</b>后直接拖到这里，或点卡片右上角 <b>+AI</b>；<br>
+            &nbsp;&nbsp;• 左栏拖文件标签进来，或点 <b>📎 引用当前类</b>。<br>
+            3. 学完一轮点 <b>📊 诊断报告</b>，自动结合提问历史找出薄弱点并出自测题；支持 <b>💾 导出 / 📂 导入</b> 备份，换浏览器也不丢。
+          </div>`;
+        return;
+      }
+
+      study.messages.forEach((m, msgIdx) => {
+        const row = document.createElement('div');
+        row.className = `ai-msg ${m.role}${m.isError ? ' error' : ''}`;
+        if (m.role === 'user' && m.quotes && m.quotes.length) {
+          const qWrap = document.createElement('div');
+          qWrap.className = 'ai-msg-quotes';
+          m.quotes.forEach(q => {
+            const b = document.createElement('span');
+            b.className = 'q-badge-mini';
+            b.textContent = q.type === 'card' ? '📎 ' + (cardMap.get(q.cardId)?.title || q.cardId) : '📄 ' + q.fileKey;
+            b.addEventListener('click', () => {
+              if (q.type === 'card') { selectCard(q.cardId, true); centerOnCard(cardMap.get(q.cardId)); }
+              else { drawerEl.classList.add('open'); syncLayoutOffsets(); renderCodeFile(q.fileKey, [], null, 'normal'); }
+            });
+            qWrap.appendChild(b);
+          });
+          row.appendChild(qWrap);
+        }
+        const bubble = document.createElement('div');
+        bubble.className = 'ai-bubble';
+        if (m.role === 'user') bubble.textContent = m.text;
+        else bubble.innerHTML = renderAiMarkdown(m.text);
+
+        if (m.isReport && m.text && !m.isError) {
+          const acts = document.createElement('div');
+          acts.className = 'report-actions';
+          const dl = document.createElement('button');
+          dl.className = 'btn btn-sm';
+          dl.textContent = '⬇️ 导出 Markdown 报告';
+          dl.addEventListener('click', () => downloadText((DATA.projectTitle || 'codemap') + '-学习诊断报告.md', m.text, 'text/markdown'));
+          acts.appendChild(dl);
+          bubble.appendChild(acts);
+        }
+        if (m.isError && m.retryInfo) {
+          const acts = document.createElement('div');
+          acts.className = 'msg-actions';
+          const retryBtn = document.createElement('button');
+          retryBtn.className = 'btn btn-sm';
+          retryBtn.textContent = '🔄 重试';
+          retryBtn.addEventListener('click', () => retryFailedTurn(msgIdx));
+          acts.appendChild(retryBtn);
+          bubble.appendChild(acts);
+        }
+        row.appendChild(bubble);
+        aiMessagesEl.appendChild(row);
+      });
+      aiMessagesEl.scrollTop = aiMessagesEl.scrollHeight;
+    }
+
+    function validateConfigObject(cfg) {
+      if (!cfg.baseUrl || !cfg.model) return '请先填写 Base URL 与 Model。';
+      if (!isLoopbackUrl(cfg.baseUrl) && !cfg.apiKey) return '非本机地址需要填写 API Key。';
+      return '';
+    }
+
+    function ensureConfigOrPrompt() {
+      const cfg = loadConfig();
+      const problem = validateConfigObject(cfg);
+      if (problem) {
+        document.getElementById('cfgBaseUrl').value = cfg.baseUrl || '';
+        document.getElementById('cfgApiKey').value = cfg.apiKey || '';
+        document.getElementById('cfgModel').value = cfg.model || '';
+        document.getElementById('aiConfigBox').classList.add('open');
+        openAiPanel();
+        const statusEl = document.getElementById('cfgTestStatus');
+        statusEl.className = 'cfg-status err';
+        statusEl.textContent = problem + '（仅存本地浏览器，不写进 HTML）';
+        return null;
+      }
+      return cfg;
+    }
+
+    async function runChatTurn(userText, quotes, apiMsgs, isReport = false, preCheckedCfg = null) {
+      const cfg = preCheckedCfg || ensureConfigOrPrompt();
+      if (!cfg || state.abortCtrl) return;
+
+      const userEntry = { role: 'user', text: userText, quotes: quotes.slice(), ts: Date.now(), isReport };
+      study.messages.push(userEntry);
+      if (!isReport) {
+        quotes.forEach(q => {
+          if (q.type === 'card') {
+            study.cardQuestions[q.cardId] = study.cardQuestions[q.cardId] || [];
+            study.cardQuestions[q.cardId].push(userText.slice(0, 120));
+          } else if (q.type === 'file') {
+            study.fileQuestions[q.fileKey] = study.fileQuestions[q.fileKey] || [];
+            study.fileQuestions[q.fileKey].push(userText.slice(0, 120));
+          }
+        });
+      }
+      const assistantEntry = { role: 'assistant', text: '', ts: Date.now(), isReport };
+      study.messages.push(assistantEntry);
+      saveStudy();
+      renderMessages();
+
+      state.abortCtrl = new AbortController();
+      aiSendBtn.style.display = 'none';
+      aiStopBtn.style.display = 'inline-flex';
+      const bubbles = aiMessagesEl.querySelectorAll('.ai-msg.assistant .ai-bubble');
+      const liveBubble = bubbles[bubbles.length - 1];
+      let receivedContent = false;
+      let reasoningShown = false;
+
+      try {
+        await streamOpenAiChat(
+          cfg,
+          apiMsgs,
+          delta => {
+            receivedContent = true;
+            assistantEntry.text += delta;
+            liveBubble.innerHTML = renderAiMarkdown(assistantEntry.text);
+            aiMessagesEl.scrollTop = aiMessagesEl.scrollHeight;
+          },
+          state.abortCtrl.signal,
+          () => {
+            if (!receivedContent && !reasoningShown) {
+              reasoningShown = true;
+              liveBubble.innerHTML = '<em>模型思考中...</em>';
+            }
+          }
+        );
+        compactOldMemoryIfNeeded();
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          assistantEntry.text += '\n\n*[已手动停止生成]*';
+        } else {
+          assistantEntry.isError = true;
+          assistantEntry.retryInfo = { userText, quotes: quotes.slice(), isReport };
+          let tip = '';
+          if (err instanceof TypeError) {
+            tip = state.proxyReady
+              ? '（本地代理 serve_map.py 连接中断或已退出，请重新双击同目录「*-AI导师.bat」启动服务）'
+              : '（浏览器 CORS 跨域拦截或目标网关未启动——请双击同目录「*-AI导师.bat」通过本机同源代理打开即可正常流式对话）';
+          }
+          assistantEntry.text += `${assistantEntry.text ? '\n\n' : ''}**[调用失败]** ${err.message} ${tip}`;
+        }
+      } finally {
+        state.abortCtrl = null;
+        aiSendBtn.style.display = 'inline-flex';
+        aiStopBtn.style.display = 'none';
+        saveStudy();
+        renderMessages();
+      }
+    }
+
+    async function retryFailedTurn(errMsgIdx) {
+      if (state.abortCtrl) return;
+      const errEntry = study.messages[errMsgIdx];
+      if (!errEntry || !errEntry.isError || !errEntry.retryInfo) return;
+      const info = errEntry.retryInfo;
+      const cfg = ensureConfigOrPrompt();
+      if (!cfg) return;
+      const prev = study.messages[errMsgIdx - 1];
+      if (prev && prev.role === 'user' && prev.text === info.userText) {
+        study.messages.splice(errMsgIdx - 1, 2);
+      } else {
+        study.messages.splice(errMsgIdx, 1);
+      }
+      saveStudy();
+      if (info.isReport) {
+        await generateDiagnosisReport();
+      } else {
+        const apiMsgs = buildApiMessages(info.userText, info.quotes || []);
+        await runChatTurn(info.userText, info.quotes || [], apiMsgs, false, cfg);
+      }
+    }
+
+    async function sendUserMessage() {
+      const text = aiInputEl.value.trim();
+      if (!text || state.abortCtrl) return;
+      const cfg = ensureConfigOrPrompt();
+      if (!cfg) return;
+      const quotes = state.quotes.slice();
+      const apiMsgs = buildApiMessages(text, quotes);
+      aiInputEl.value = '';
+      state.quotes = [];
+      renderQuoteTray();
+      await runChatTurn(text, quotes, apiMsgs, false, cfg);
+    }
+
+    // Layer 4: Weakness Diagnosis Report Generator
+    async function generateDiagnosisReport() {
+      openAiPanel();
+      if (state.abortCtrl) return;
+      const cfg = ensureConfigOrPrompt();
+      if (!cfg) return;
+
+      const unviewed = [];
+      const highFreq = [];
+      DATA.chains.forEach(ch => {
+        const chCards = DATA.cards.filter(c => c.chainId === ch.id);
+        chCards.forEach(c => {
+          if (!study.cardViews[c.id]) unviewed.push(`${ch.name} -> ${c.title}`);
+          const qs = study.cardQuestions[c.id] || [];
+          if (qs.length) highFreq.push({ title: c.title, file: c.file, ranges: formatRanges(c.ranges), qs });
+        });
+      });
+      const fileHot = Object.entries(study.fileQuestions).map(([k, qs]) => `${k}（被问 ${qs.length} 次：${qs.join(' / ')}）`);
+      const recentQA = study.messages
+        .filter(m => !m.isReport && m.role === 'user')
+        .slice(-15)
+        .map((m, i) => `${i + 1}. ${m.text}`)
+        .join('\n');
+
+      const dossier = `以下是用户学习《${DATA.projectTitle || ''}》的真实轨迹数据：
+- 总卡片数：${DATA.cards.length}，已点开探索：${Object.keys(study.cardViews).length} 张
+- 尚未探索的盲区卡片（节选前 20 张）：${unviewed.slice(0, 20).join('；') || '已全部探索！'}
+- 按卡片统计的用户追问明细：${highFreq.map(h => `\n  • ${h.title} (${h.file} ${h.ranges}) [追问 ${h.qs.length} 次]：${h.qs.join(' | ')}`).join('') || '暂无卡片定向追问'}
+- 按文件统计的用户追问：${fileHot.join('；') || '无'}
+- 场景剧本探索深度：${(DATA.scenarios || []).map(s => `${s.name}（走到第 ${study.scenarioMaxStep[s.id] || 0}/${(s.steps || []).length} 步）`).join('；') || '无'}
+- 用户近期全部提问列表：\n${recentQA || '（用户尚未提具体问题，请结合未探索盲区和核心难点生成重点攻克指南）'}
+
+请严格根据以上学习数据生成一份《个人源码学习薄弱点诊断报告》，按以下 4 节输出 Markdown：
+### 1. 学习覆盖度总览（点出已掌握/已走过的链路）
+### 2. 薄弱环节精准诊断（重点分析多次追问的难点与未覆盖盲区）
+### 3. 建议优先回看的 3 张核心卡片（写出精确卡片名、文件名与行号）
+### 4. 针对薄弱点的 3 道面试自测题（附简明参考答法要点）`;
+
+      const apiMsgs = [
+        { role: 'system', content: buildSystemPrompt() },
+        { role: 'user', content: dossier }
+      ];
+      await runChatTurn('📊 请结合我的浏览与提问记录，生成《学习薄弱点诊断报告》', [], apiMsgs, true, cfg);
+    }
+
+    function downloadText(filename, content, mime) {
+      const blob = new Blob([content], { type: mime + ';charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // ── 9. Search & Toolbar Bindings ──
+    function updateSearchFilter() {
+      const q = searchInput.value.trim().toLowerCase();
+      document.querySelectorAll('.node-group').forEach(el => {
+        if (!q) { el.style.opacity = ''; return; }
+        const c = cardMap.get(el.dataset.id);
+        const hay = `${c.title} ${c.subtitle || ''} ${c.file || ''} ${c.note || ''} ${c.interview || ''}`.toLowerCase();
+        el.style.opacity = hay.includes(q) ? '1' : '0.16';
+      });
+    }
+    searchInput.addEventListener('input', updateSearchFilter);
+    searchInput.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter') {
+        const q = searchInput.value.trim().toLowerCase();
+        if (!q) return;
+        const hit = DATA.cards.find(c => `${c.title} ${c.subtitle || ''} ${c.file || ''} ${c.note || ''} ${c.interview || ''}`.toLowerCase().includes(q));
+        if (hit) {
+          if (state.activeChainId !== 'ALL' && state.hideOtherChains && hit.chainId !== state.activeChainId) activateChain('ALL');
+          selectCard(hit.id, true);
+          centerOnCard(hit);
+        }
+      }
+    });
+
+    otherModeBtn.addEventListener('click', () => {
+      state.hideOtherChains = !state.hideOtherChains;
+      renderTopBars(); renderScene(); fitToView();
+    });
+    document.getElementById('zoomInBtn').addEventListener('click', () => { state.scale = Math.min(2.2, state.scale * 1.18); applyTransform(); });
+    document.getElementById('zoomOutBtn').addEventListener('click', () => { state.scale = Math.max(0.18, state.scale * 0.85); applyTransform(); });
+    document.getElementById('fitBtn').addEventListener('click', () => fitToView());
+
+    document.getElementById('toggleDrawerBtn').addEventListener('click', () => {
+      const isOpen = drawerEl.classList.toggle('open');
+      drawerEl.setAttribute('aria-hidden', String(!isOpen));
+      syncLayoutOffsets();
+      if (isOpen && !state.selectedCardId && state.currentFile) renderCodeFile(state.currentFile, [], null, 'normal');
+    });
+    document.getElementById('closeDrawerBtn').addEventListener('click', () => {
+      drawerEl.classList.remove('open'); drawerEl.setAttribute('aria-hidden', 'true'); syncLayoutOffsets();
+    });
+    document.getElementById('wideLeftBtn').addEventListener('click', () => {
+      const w = drawerEl.classList.toggle('wide');
+      document.getElementById('wideLeftBtn').textContent = w ? '窄版' : '加宽';
+      syncLayoutOffsets();
+    });
+    document.getElementById('quoteCardBtn').addEventListener('click', () => {
+      if (state.selectedCardId) addQuote({ type: 'card', cardId: state.selectedCardId });
+      else if (state.currentFile) addQuote({ type: 'file', fileKey: state.currentFile });
+      openAiPanel();
+    });
+
+    document.getElementById('toggleAiBtn').addEventListener('click', () => {
+      const isOpen = aiPanelEl.classList.toggle('open');
+      aiPanelEl.setAttribute('aria-hidden', String(!isOpen));
+      syncLayoutOffsets();
+    });
+    document.getElementById('closeAiBtn').addEventListener('click', () => {
+      aiPanelEl.classList.remove('open'); aiPanelEl.setAttribute('aria-hidden', 'true'); syncLayoutOffsets();
+    });
+    document.getElementById('wideRightBtn').addEventListener('click', () => {
+      const w = aiPanelEl.classList.toggle('wide');
+      document.getElementById('wideRightBtn').textContent = w ? '窄版' : '加宽';
+      syncLayoutOffsets();
+    });
+
+    document.getElementById('aiConfigBtn').addEventListener('click', () => {
+      const box = document.getElementById('aiConfigBox');
+      const cfg = loadConfig();
+      document.getElementById('cfgBaseUrl').value = cfg.baseUrl || '';
+      document.getElementById('cfgApiKey').value = cfg.apiKey || '';
+      document.getElementById('cfgModel').value = cfg.model || '';
+      document.getElementById('cfgTestStatus').textContent = '';
+      document.getElementById('cfgTestStatus').className = 'cfg-status';
+      box.classList.toggle('open');
+    });
+    document.getElementById('testCfgBtn').addEventListener('click', testConnection);
+    document.getElementById('saveCfgBtn').addEventListener('click', () => {
+      saveConfig({
+        baseUrl: document.getElementById('cfgBaseUrl').value.trim(),
+        apiKey: document.getElementById('cfgApiKey').value.trim(),
+        model: document.getElementById('cfgModel').value.trim()
+      });
+      document.getElementById('aiConfigBox').classList.remove('open');
+    });
+
+    document.getElementById('diagReportBtn').addEventListener('click', generateDiagnosisReport);
+    document.getElementById('meterDiagLink').addEventListener('click', generateDiagnosisReport);
+
+    document.getElementById('exportStudyBtn').addEventListener('click', () => {
+      downloadText((DATA.projectTitle || 'codemap') + '-study-backup.json', JSON.stringify(study, null, 2), 'application/json');
+    });
+    document.getElementById('importStudyBtn').addEventListener('click', () => document.getElementById('importFileInput').click());
+    document.getElementById('importFileInput').addEventListener('change', async ev => {
+      const f = ev.target.files[0];
+      ev.target.value = '';
+      if (!f) return;
+      try {
+        const imported = JSON.parse(await f.text());
+        if (!imported || !Array.isArray(imported.messages)) throw new Error('格式不正确');
+        study = Object.assign(emptyStudy(), imported);
+        saveStudy();
+        renderMessages();
+      } catch (e) {
+        alert('导入备份失败：' + e.message);
+      }
+    });
+
+    document.getElementById('clearAiBtn').addEventListener('click', () => {
+      if (!confirm('确认清空当前对话消息记录吗？（卡片探索统计将保留用于诊断报告）')) return;
+      study.messages = [];
+      study.memorySummary = '';
+      saveStudy();
+      renderMessages();
+    });
+
+    aiSendBtn.addEventListener('click', sendUserMessage);
+    aiStopBtn.addEventListener('click', () => { if (state.abortCtrl) state.abortCtrl.abort(); });
+    aiInputEl.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); sendUserMessage(); }
+    });
+
+    function stepCard(delta) {
+      if (!state.selectedCardId) { selectCard(DATA.cards[0].id, true); return; }
+      const cur = cardMap.get(state.selectedCardId);
+      const pool = cur.file
+        ? DATA.cards.filter(c => c.file === cur.file)
+        : DATA.cards.filter(c => c.chainId === cur.chainId);
+      const i = pool.findIndex(c => c.id === cur.id);
+      const next = pool[(i + delta + pool.length) % pool.length];
+      selectCard(next.id, true);
+      centerOnCard(next);
+    }
+    document.getElementById('prevCardBtn').addEventListener('click', () => stepCard(-1));
+    document.getElementById('nextCardBtn').addEventListener('click', () => stepCard(1));
+
+    window.addEventListener('keydown', ev => {
+      const tag = document.activeElement && document.activeElement.tagName;
+      if (ev.key === 'Escape') {
+        if (state.armedCardId) { state.armedCardId = null; renderScene(); return; }
+        drawerEl.classList.remove('open'); drawerEl.setAttribute('aria-hidden', 'true');
+        syncLayoutOffsets();
+        return;
+      }
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (ev.key === 'ArrowLeft') {
+        if (state.activeScenarioId) jumpToScenarioStep(state.scenarioStepIdx - 1, true);
+        else if (state.activeChainId !== 'ALL') jumpToTourStep(state.tourStepIdx - 1);
+      } else if (ev.key === 'ArrowRight') {
+        if (state.activeScenarioId) jumpToScenarioStep(state.scenarioStepIdx + 1, true);
+        else if (state.activeChainId !== 'ALL') jumpToTourStep(state.tourStepIdx + 1);
+      }
+    });
+
+    // Init
+    renderTopBars();
+    renderFileTabs();
+    renderScene();
+    renderMessages();
+    updateStudyMeter();
+    fitToView();
+    detectLocalProxy();
+  </script>
+</body>
+</html>
